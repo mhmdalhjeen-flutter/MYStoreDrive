@@ -15,7 +15,6 @@ const mockPrisma = createMockPrismaService();
 
 describe('CartService', () => {
   let service: CartService;
-  let productsService: ProductsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -48,7 +47,6 @@ describe('CartService', () => {
     }).compile();
 
     service = module.get<CartService>(CartService);
-    productsService = module.get<ProductsService>(ProductsService);
     jest.clearAllMocks();
   });
 

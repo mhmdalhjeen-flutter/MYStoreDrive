@@ -32,12 +32,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = responseObj.message || exception.message;
         error = responseObj.error || error;
       }
-    } else if (exception instanceof Error) {
+    } else if (exception instanceof Error && process.env.NODE_ENV !== 'production') {
       message = exception.message;
     }
 
+    const loggedMessage = exception instanceof Error ? exception.message : message;
+
     this.logger.error(
-      `${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
+      `${request.method} ${request.url} - Status: ${status} - Message: ${loggedMessage}`,
       exception instanceof Error ? exception.stack : '',
     );
 

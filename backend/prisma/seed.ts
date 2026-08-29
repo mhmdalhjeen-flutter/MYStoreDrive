@@ -6,15 +6,31 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Create default admin user
-  const adminPassword = await bcrypt.hash('admin123456', 12);
+  // Create default admin user from environment configuration.
+  // Credentials are never hardcoded: outside development the seed refuses to run
+  // without SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPhone = process.env.SEED_ADMIN_PHONE || '0590000000';
+  const adminPasswordPlain = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPasswordPlain) {
+    throw new Error(
+      'SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set before seeding the admin user',
+    );
+  }
+
+  if (adminPasswordPlain.length < 12) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 12 characters');
+  }
+
+  const adminPassword = await bcrypt.hash(adminPasswordPlain, 12);
 
   await prisma.user.upsert({
-    where: { email: 'admin@store.com' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      phoneNumber: '0590000000',
-      email: 'admin@store.com',
+      phoneNumber: adminPhone,
+      email: adminEmail,
       name: 'مدير النظام',
       passwordHash: adminPassword,
       role: UserRole.ADMIN,
