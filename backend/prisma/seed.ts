@@ -3,7 +3,18 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Prisma error messages can embed the connection string, credentials included.
+function redactConnectionStrings(text: string): string {
+  return text.replace(/(postgres(?:ql)?:\/\/)[^\s@'"]*@/gi, '$1***@');
+}
+
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error(
+      'Refusing to seed with NODE_ENV=production. Set ALLOW_PRODUCTION_SEED=true only if you really intend to seed this database.',
+    );
+  }
+
   console.log('🌱 Starting database seed...');
 
   // Create default admin user from environment configuration.
@@ -106,7 +117,8 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error('❌ Database seed failed:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Database seed failed: ${redactConnectionStrings(message)}`);
     process.exit(1);
   })
   .finally(async () => {
