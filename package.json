@@ -1,0 +1,40 @@
+{
+  "name": "arabic-ecommerce-platform",
+  "version": "1.0.0",
+  "description": "Arabic RTL e-commerce platform with separate Store, Admin, and Backend API",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "store",
+    "admin"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:store\" \"npm run dev:admin\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:store": "cd store && npm run dev",
+    "dev:admin": "cd admin && npm run dev",
+    "build": "npm run build:backend && npm run build:store && npm run build:admin",
+    "build:backend": "cd backend && npm run build",
+    "build:store": "cd store && npm run build",
+    "build:admin": "cd admin && npm run build",
+    "test": "npm run test:backend && npm run test:store && npm run test:admin",
+    "test:backend": "cd backend && npm run test",
+    "test:store": "cd store && npm run test",
+    "test:admin": "cd admin && npm run test",
+    "lint": "npm run lint:backend && npm run lint:store && npm run lint:admin",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:store": "cd store && npm run lint",
+    "lint:admin": "cd admin && npm run lint",
+    "db:migrate": "cd backend && npm run prisma:migrate",
+    "db:generate": "cd backend && npm run prisma:generate",
+    "db:studio": "cd backend && npm run prisma:studio",
+    "db:seed": "cd backend && npm run prisma:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
