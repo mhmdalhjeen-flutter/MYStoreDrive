@@ -3,18 +3,45 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Prisma error messages can embed the connection string, credentials included.
+function redactConnectionStrings(text: string): string {
+  return text.replace(/(postgres(?:ql)?:\/\/)[^\s@'"]*@/gi, '$1***@');
+}
+
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error(
+      'Refusing to seed with NODE_ENV=production. Set ALLOW_PRODUCTION_SEED=true only if you really intend to seed this database.',
+    );
+  }
+
   console.log('🌱 Starting database seed...');
 
-  // Create default admin user
-  const adminPassword = await bcrypt.hash('admin123456', 12);
+  // Create default admin user from environment configuration.
+  // Credentials are never hardcoded: outside development the seed refuses to run
+  // without SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPhone = process.env.SEED_ADMIN_PHONE || '0590000000';
+  const adminPasswordPlain = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPasswordPlain) {
+    throw new Error(
+      'SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set before seeding the admin user',
+    );
+  }
+
+  if (adminPasswordPlain.length < 12) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 12 characters');
+  }
+
+  const adminPassword = await bcrypt.hash(adminPasswordPlain, 12);
 
   await prisma.user.upsert({
-    where: { email: 'admin@store.com' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      phoneNumber: '0590000000',
-      email: 'admin@store.com',
+      phoneNumber: adminPhone,
+      email: adminEmail,
       name: 'مدير النظام',
       passwordHash: adminPassword,
       role: UserRole.ADMIN,
@@ -90,7 +117,8 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error('❌ Database seed failed:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Database seed failed: ${redactConnectionStrings(message)}`);
     process.exit(1);
   })
   .finally(async () => {

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CategoriesService } from './categories.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createMockPrismaService } from '../prisma/prisma.service.mock';
-import { ValidationException, ResourceNotFoundException } from '../../common/exceptions/business.exception';
+import { ValidationException } from '../../common/exceptions/business.exception';
 
 const mockPrisma = createMockPrismaService();
 
