@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { WinstonModule } from 'nest-winston';
+import helmet from 'helmet';
 import * as winston from 'winston';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -46,6 +47,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: WinstonModule.createLogger({ transports: createTransports() }),
   });
+
+  // Security headers. CSP is enabled in production only: its defaults block the
+  // inline scripts Swagger UI needs, and Swagger is a development tool here.
+  app.use(helmet({ contentSecurityPolicy: isProduction }));
 
   // Required for correct client IPs (rate limiting) behind a cloud load balancer
   app.set('trust proxy', 1);
