@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CartService } from './cart.service';
@@ -12,8 +12,19 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Get()
-  async getCart(@CurrentUser('id') userId: string) {
-    return this.cartService.getCart(userId);
+  async getCart(
+    @CurrentUser('id') userId: string,
+    @Query('deliveryAreaId') deliveryAreaId?: string,
+  ) {
+    return this.cartService.getCart(userId, deliveryAreaId);
+  }
+
+  @Get('summary')
+  async getSummary(
+    @CurrentUser('id') userId: string,
+    @Query('deliveryAreaId') deliveryAreaId?: string,
+  ) {
+    return this.cartService.getSummary(userId, deliveryAreaId);
   }
 
   @Post('items')

@@ -9,7 +9,7 @@ export class SettingsController {
   @Public()
   @Get()
   async getSettings() {
-    return this.settingsService.getSettings();
+    return this.settingsService.getPublicSettings();
   }
 
   @Public()

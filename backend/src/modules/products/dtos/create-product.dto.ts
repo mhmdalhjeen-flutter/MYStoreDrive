@@ -8,11 +8,11 @@ import {
   Min,
   IsArray,
   ValidateNested,
-  ArrayMinSize,
+  IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProductAvailability, ProductCondition } from '@prisma/client';
+import { OfferType, ProductAvailability, ProductCondition } from '@prisma/client';
 
 export class CreateVariantDto {
   @ApiProperty({ description: 'Variant name (e.g., Red)' })
@@ -110,6 +110,34 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[] = [];
+
+  @ApiPropertyOptional({ description: 'Whether an offer is enabled' })
+  @IsOptional()
+  @IsBoolean()
+  hasOffer?: boolean = false;
+
+  @ApiPropertyOptional({ enum: OfferType })
+  @IsOptional()
+  @IsEnum(OfferType)
+  offerType?: OfferType;
+
+  @ApiPropertyOptional({ description: 'Non-negative offer value' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offerValue?: number;
+
+  @ApiPropertyOptional({ description: 'Offer start date' })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  offerStartDate?: Date;
+
+  @ApiPropertyOptional({ description: 'Offer end date' })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  offerEndDate?: Date;
 
   @ApiPropertyOptional({ description: 'Product variants' })
   @IsOptional()

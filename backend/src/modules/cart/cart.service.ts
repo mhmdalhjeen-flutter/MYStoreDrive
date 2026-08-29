@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { DeliveryService } from '../delivery/delivery.service';
 import {
   ResourceNotFoundException,
   ValidationException,
   InsufficientStockException,
 } from '../../common/exceptions/business.exception';
 
-export interface CartSummary {
+export interface CartTotals {
   subtotal: number;
-  actualScore: number;
   totalItems: number;
   itemCount: number;
 }
@@ -20,6 +20,7 @@ export class CartService {
   constructor(
     private prisma: PrismaService,
     private productsService: ProductsService,
+    private deliveryService: DeliveryService,
   ) {}
 
   private get baseInclude() {
@@ -29,19 +30,24 @@ export class CartService {
     };
   }
 
-  async getCart(userId: string) {
+  async getCart(userId: string, deliveryAreaId?: string) {
     const cartItems = await this.prisma.cartItem.findMany({
       where: { userId },
       include: this.baseInclude,
       orderBy: { createdAt: 'asc' as const },
     });
 
-    const summary = this.calculateCartSummary(cartItems as any[]);
+    const [totals, delivery] = await Promise.all([
+      Promise.resolve(this.calculateCartTotals(cartItems as any[])),
+      this.deliveryService.calculateFreeDelivery(userId, deliveryAreaId),
+    ]);
 
-    return {
-      items: cartItems,
-      summary,
-    };
+    return { items: cartItems, summary: { ...totals, ...delivery } };
+  }
+
+  async getSummary(userId: string, deliveryAreaId?: string) {
+    const cart = await this.getCart(userId, deliveryAreaId);
+    return cart.summary;
   }
 
   async addToCart(
@@ -168,9 +174,8 @@ export class CartService {
     });
   }
 
-  calculateCartSummary(cartItems: any[]): CartSummary {
+  calculateCartTotals(cartItems: any[]): CartTotals {
     let subtotal = new Prisma.Decimal(0);
-    let actualScore = new Prisma.Decimal(0);
     let totalItems = 0;
 
     cartItems.forEach((item) => {
@@ -179,17 +184,14 @@ export class CartService {
         ? new Prisma.Decimal(item.variant.priceAdjustment)
         : new Prisma.Decimal(0);
       const unitPrice = productPrice.plus(variantAdjustment);
-      const itemValue = new Prisma.Decimal(item.product.freeDeliveryValue ?? 0);
       const quantity = item.quantity;
 
       subtotal = subtotal.plus(unitPrice.times(quantity));
-      actualScore = actualScore.plus(itemValue.times(quantity));
       totalItems += quantity;
     });
 
     return {
       subtotal: subtotal.toDecimalPlaces(2).toNumber(),
-      actualScore: actualScore.toDecimalPlaces(2).toNumber(),
       totalItems,
       itemCount: cartItems.length,
     };

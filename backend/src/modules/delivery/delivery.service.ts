@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
-import {
-  ResourceNotFoundException,
-  ValidationException,
-} from '../../common/exceptions/business.exception';
+import { ResourceNotFoundException } from '../../common/exceptions/business.exception';
 import { CreateDeliveryAreaDto } from './dtos/create-delivery-area.dto';
 import { UpdateDeliveryAreaDto } from './dtos/update-delivery-area.dto';
 
@@ -22,8 +19,15 @@ export interface FreeDeliveryCalculation {
   deliveryDiscount: number;
   isFreeDelivery: boolean;
   isPartialFreeDelivery: boolean;
-  areaEligibility: boolean;
+  areaEligibility: boolean | null;
   remainingScore: number;
+}
+
+interface DeliverySettings {
+  freeDeliveryTarget: Prisma.Decimal | number | string;
+  partialFreeDeliveryEnabled: boolean;
+  partialFreeDeliveryThreshold: Prisma.Decimal | number | string;
+  partialFreeDeliveryDiscount: number;
 }
 
 @Injectable()
@@ -40,10 +44,16 @@ export class DeliveryService {
     });
   }
 
+  async getAllAreas() {
+    return this.prisma.deliveryArea.findMany({ orderBy: { name: 'asc' } });
+  }
+
   async getAreaById(id: string) {
-    return this.prisma.deliveryArea.findUnique({
-      where: { id },
-    });
+    return this.prisma.deliveryArea.findUnique({ where: { id } });
+  }
+
+  async getActiveAreaById(id: string) {
+    return this.prisma.deliveryArea.findFirst({ where: { id, isActive: true } });
   }
 
   async create(dto: CreateDeliveryAreaDto) {
@@ -59,109 +69,108 @@ export class DeliveryService {
   }
 
   async update(id: string, dto: UpdateDeliveryAreaDto) {
-    const existing = await this.getAreaById(id);
-    if (!existing) {
-      throw new ResourceNotFoundException('Delivery area', id);
-    }
-
+    await this.requireArea(id);
     const data: any = { ...dto };
-    if (dto.deliveryFee !== undefined) {
-      data.deliveryFee = new Prisma.Decimal(dto.deliveryFee);
-    }
+    if (dto.deliveryFee !== undefined) data.deliveryFee = new Prisma.Decimal(dto.deliveryFee);
+    return this.prisma.deliveryArea.update({ where: { id }, data });
+  }
 
-    return this.prisma.deliveryArea.update({
-      where: { id },
-      data,
-    });
+  async setActive(id: string, isActive: boolean) {
+    await this.requireArea(id);
+    return this.prisma.deliveryArea.update({ where: { id }, data: { isActive } });
   }
 
   async remove(id: string) {
-    const existing = await this.getAreaById(id);
-    if (!existing) {
-      throw new ResourceNotFoundException('Delivery area', id);
+    await this.requireArea(id);
+    const [addressCount, orderCount] = await Promise.all([
+      this.prisma.address.count({ where: { deliveryAreaId: id } }),
+      this.prisma.order.count({ where: { deliveryAreaId: id } }),
+    ]);
+    if (addressCount > 0 || orderCount > 0) {
+      const area = await this.setActive(id, false);
+      return {
+        action: 'deactivated',
+        reason: 'Delivery area is referenced and cannot be hard-deleted',
+        area,
+      };
     }
-
-    return this.prisma.deliveryArea.delete({ where: { id } });
+    await this.prisma.deliveryArea.delete({ where: { id } });
+    return { action: 'deleted', reason: 'No references found; delivery area hard-deleted', areaId: id };
   }
 
-  async calculateFreeDelivery(
-    userId: string,
-    deliveryAreaId: string,
-  ): Promise<FreeDeliveryCalculation> {
-    const area = await this.getAreaById(deliveryAreaId);
-    if (!area || !area.isActive) {
-      throw new ResourceNotFoundException('Delivery area', deliveryAreaId);
-    }
-
-    const [settings, cartItems] = await Promise.all([
-      this.settingsService.getDeliverySettings(),
-      this.prisma.cartItem.findMany({
-        where: { userId },
-        include: {
-          product: true,
-        },
-      }),
-    ]);
-
-    if (!settings) {
-      throw new ValidationException('Delivery settings are not configured');
-    }
-
-    const actualScore = cartItems.reduce((sum, item) => {
-      const itemValue = new Prisma.Decimal(item.product.freeDeliveryValue ?? 0);
-      return sum.plus(itemValue.times(item.quantity));
-    }, new Prisma.Decimal(0));
-
+  /** Pure/reusable Decimal-safe score and fee engine. */
+  calculateScoreResult(
+    scoreInput: Prisma.Decimal | number | string,
+    settings: DeliverySettings,
+    area?: { deliveryFee: Prisma.Decimal | number | string; eligibleForFreeDelivery: boolean },
+  ): FreeDeliveryCalculation {
+    const actualScore = new Prisma.Decimal(scoreInput);
     const target = new Prisma.Decimal(settings.freeDeliveryTarget);
-    const partialThreshold = new Prisma.Decimal(settings.partialFreeDeliveryThreshold);
-    const originalFee = new Prisma.Decimal(area.deliveryFee);
+    const threshold = new Prisma.Decimal(settings.partialFreeDeliveryThreshold);
+    const originalFee = area ? new Prisma.Decimal(area.deliveryFee) : new Prisma.Decimal(0);
+    let fee = originalFee;
+    let discount = new Prisma.Decimal(0);
+    let isFree = false;
+    let isPartial = false;
 
-    let deliveryFee = originalFee;
-    let deliveryDiscount = new Prisma.Decimal(0);
-    let isFreeDelivery = false;
-    let isPartialFreeDelivery = false;
-
-    if (area.eligibleForFreeDelivery) {
+    if (area?.eligibleForFreeDelivery) {
       if (actualScore.greaterThanOrEqualTo(target)) {
-        isFreeDelivery = true;
-        deliveryDiscount = originalFee;
-        deliveryFee = new Prisma.Decimal(0);
+        isFree = true;
+        discount = originalFee;
+        fee = new Prisma.Decimal(0);
       } else if (
         settings.partialFreeDeliveryEnabled &&
-        actualScore.greaterThanOrEqualTo(partialThreshold)
+        actualScore.greaterThanOrEqualTo(threshold)
       ) {
-        isPartialFreeDelivery = true;
-        const discountRate = new Prisma.Decimal(settings.partialFreeDeliveryDiscount).div(100);
-        deliveryDiscount = originalFee.times(discountRate);
-        deliveryFee = originalFee.minus(deliveryDiscount);
+        isPartial = true;
+        discount = originalFee.times(new Prisma.Decimal(settings.partialFreeDeliveryDiscount).div(100));
+        fee = originalFee.minus(discount);
       }
     }
 
-    const displayedScore = Prisma.Decimal.min(actualScore, target);
-    const remainingScore = Prisma.Decimal.max(
-      new Prisma.Decimal(0),
-      target.minus(actualScore),
-    );
-
-    const progressPercentage = target.greaterThan(0)
-      ? actualScore.dividedBy(target).times(100).toDecimalPlaces(2).toNumber()
-      : 0;
+    const displayed = Prisma.Decimal.min(actualScore, target);
+    const remaining = Prisma.Decimal.max(0, target.minus(actualScore));
+    const progress = target.greaterThan(0)
+      ? Prisma.Decimal.min(100, actualScore.div(target).times(100)).toDecimalPlaces(2)
+      : new Prisma.Decimal(0);
 
     return {
       actualScore: actualScore.toDecimalPlaces(2).toNumber(),
-      displayedScore: displayedScore.toDecimalPlaces(2).toNumber(),
+      displayedScore: displayed.toDecimalPlaces(2).toNumber(),
       target: target.toNumber(),
-      progressPercentage: Math.min(progressPercentage, 100),
+      progressPercentage: progress.toNumber(),
       partialEnabled: settings.partialFreeDeliveryEnabled,
-      partialThreshold: partialThreshold.toNumber(),
+      partialThreshold: threshold.toNumber(),
       partialDiscount: settings.partialFreeDeliveryDiscount,
       originalDeliveryFee: originalFee.toNumber(),
-      deliveryFee: deliveryFee.toNumber(),
-      deliveryDiscount: deliveryDiscount.toDecimalPlaces(2).toNumber(),
-      isFreeDelivery,
-      isPartialFreeDelivery,
-      areaEligibility: area.eligibleForFreeDelivery,
-      remainingScore: remainingScore.toDecimalPlaces(2).toNumber(),
+      deliveryFee: fee.toDecimalPlaces(2).toNumber(),
+      deliveryDiscount: discount.toDecimalPlaces(2).toNumber(),
+      isFreeDelivery: isFree,
+      isPartialFreeDelivery: isPartial,
+      areaEligibility: area ? area.eligibleForFreeDelivery : null,
+      remainingScore: remaining.toDecimalPlaces(2).toNumber(),
     };
+  }
+
+  /** Authenticated API path: score is always derived from this user's DB cart. */
+  async calculateFreeDelivery(userId: string, deliveryAreaId?: string) {
+    const [settings, cartItems, area] = await Promise.all([
+      this.settingsService.getDeliverySettings(),
+      this.prisma.cartItem.findMany({ where: { userId }, include: { product: true } }),
+      deliveryAreaId ? this.getActiveAreaById(deliveryAreaId) : Promise.resolve(undefined),
+    ]);
+    if (deliveryAreaId && !area) throw new ResourceNotFoundException('Delivery area', deliveryAreaId);
+
+    const score = cartItems.reduce(
+      (sum, item) => sum.plus(new Prisma.Decimal(item.product.freeDeliveryValue).times(item.quantity)),
+      new Prisma.Decimal(0),
+    );
+    return this.calculateScoreResult(score, settings, area);
+  }
+
+  private async requireArea(id: string) {
+    const area = await this.getAreaById(id);
+    if (!area) throw new ResourceNotFoundException('Delivery area', id);
+    return area;
   }
 }

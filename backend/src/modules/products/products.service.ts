@@ -34,6 +34,7 @@ export class ProductsService {
           ...where,
           isActive: true,
           isAvailable: true,
+          availability: { not: 'UNAVAILABLE' },
         };
 
     const [products, total] = await Promise.all([
@@ -68,6 +69,7 @@ export class ProductsService {
         id,
         isActive: true,
         isAvailable: true,
+        availability: { not: 'UNAVAILABLE' },
       },
       include: this.baseInclude,
     });
@@ -78,6 +80,7 @@ export class ProductsService {
       where: {
         isActive: true,
         isAvailable: true,
+        availability: { not: 'UNAVAILABLE' },
         isRecommended: true,
       },
       include: { category: true },
@@ -90,6 +93,7 @@ export class ProductsService {
       where: {
         isActive: true,
         isAvailable: true,
+        availability: { not: 'UNAVAILABLE' },
         hasOffer: true,
         offerStartDate: { lte: now },
         OR: [{ offerEndDate: null }, { offerEndDate: { gte: now } }],
@@ -99,15 +103,20 @@ export class ProductsService {
   }
 
   async search(query: string) {
+    const normalized = query?.trim();
+    if (!normalized || normalized.length < 2 || normalized.length > 100) {
+      throw new ValidationException('Search query must contain between 2 and 100 characters');
+    }
     return this.prisma.product.findMany({
       where: {
         isActive: true,
         isAvailable: true,
+        availability: { not: 'UNAVAILABLE' },
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { nameEn: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-          { tags: { has: query } },
+          { name: { contains: normalized, mode: 'insensitive' } },
+          { nameEn: { contains: normalized, mode: 'insensitive' } },
+          { description: { contains: normalized, mode: 'insensitive' } },
+          { tags: { has: normalized } },
         ],
       },
       include: { category: true },
@@ -123,6 +132,7 @@ export class ProductsService {
     }
 
     this.validateAvailabilityStock(dto.availability, dto.stock);
+    this.validateOffer(dto);
 
     const data: any = {
       name: dto.name,
@@ -139,6 +149,11 @@ export class ProductsService {
       condition: dto.condition,
       tags: dto.tags ?? [],
       images: dto.images ?? [],
+      hasOffer: dto.hasOffer ?? false,
+      offerType: dto.offerType,
+      offerValue: dto.offerValue !== undefined ? new Prisma.Decimal(dto.offerValue) : undefined,
+      offerStartDate: dto.offerStartDate,
+      offerEndDate: dto.offerEndDate,
     };
 
     if (dto.variants?.length) {
@@ -172,6 +187,13 @@ export class ProductsService {
       dto.availability ?? existing.availability,
       dto.stock ?? existing.stock,
     );
+    this.validateOffer({
+      hasOffer: dto.hasOffer ?? existing.hasOffer,
+      offerType: dto.offerType ?? existing.offerType,
+      offerValue: dto.offerValue ?? existing.offerValue?.toNumber(),
+      offerStartDate: dto.offerStartDate ?? existing.offerStartDate,
+      offerEndDate: dto.offerEndDate ?? existing.offerEndDate,
+    });
 
     const data: any = { ...dto };
     if (dto.price !== undefined) {
@@ -179,6 +201,9 @@ export class ProductsService {
     }
     if (dto.freeDeliveryValue !== undefined) {
       data.freeDeliveryValue = new Prisma.Decimal(dto.freeDeliveryValue);
+    }
+    if (dto.offerValue !== undefined) {
+      data.offerValue = new Prisma.Decimal(dto.offerValue);
     }
 
     return this.prisma.product.update({
@@ -269,6 +294,28 @@ export class ProductsService {
   ) {
     if (availability === 'LIMITED' && (stock === undefined || stock < 0)) {
       throw new ValidationException('Limited products must have a stock quantity >= 0');
+    }
+  }
+
+  private validateOffer(input: {
+    hasOffer?: boolean;
+    offerType?: unknown;
+    offerValue?: number;
+    offerStartDate?: Date;
+    offerEndDate?: Date;
+  }) {
+    if (input.hasOffer && (input.offerType == null || input.offerValue == null)) {
+      throw new ValidationException('Enabled offers require offerType and offerValue');
+    }
+    if (input.offerValue !== undefined && input.offerValue < 0) {
+      throw new ValidationException('Offer value must be non-negative');
+    }
+    if (
+      input.offerStartDate &&
+      input.offerEndDate &&
+      input.offerEndDate < input.offerStartDate
+    ) {
+      throw new ValidationException('Offer end date must not be before offer start date');
     }
   }
 

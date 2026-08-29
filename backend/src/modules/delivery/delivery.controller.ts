@@ -17,7 +17,7 @@ export class DeliveryController {
   @Public()
   @Get('areas/:id')
   async getDeliveryArea(@Param('id') id: string) {
-    return this.deliveryService.getAreaById(id);
+    return this.deliveryService.getActiveAreaById(id);
   }
 
   @Post('calculate')

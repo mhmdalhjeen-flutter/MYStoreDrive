@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -20,7 +21,7 @@ export class AdminDeliveryController {
 
   @Get()
   async findAll() {
-    return this.deliveryService.getActiveAreas();
+    return this.deliveryService.getAllAreas();
   }
 
   @Get(':id')
@@ -39,6 +40,16 @@ export class AdminDeliveryController {
     @Body() updateDeliveryAreaDto: UpdateDeliveryAreaDto,
   ) {
     return this.deliveryService.update(id, updateDeliveryAreaDto);
+  }
+
+  @Patch(':id/activate')
+  async activate(@Param('id') id: string) {
+    return this.deliveryService.setActive(id, true);
+  }
+
+  @Patch(':id/deactivate')
+  async deactivate(@Param('id') id: string) {
+    return this.deliveryService.setActive(id, false);
   }
 
   @Delete(':id')

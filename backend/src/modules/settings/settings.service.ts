@@ -25,6 +25,23 @@ export class SettingsService {
     return settings;
   }
 
+  async getPublicSettings() {
+    const settings = await this.getSettings();
+    return {
+      storeName: settings.storeName,
+      storeNameEn: settings.storeNameEn,
+      storePhone: settings.storePhone,
+      storeEmail: settings.storeEmail,
+      socialMediaLinks: settings.socialMediaLinks,
+      isStoreOpen: settings.isStoreOpen,
+      storeClosedMessage: settings.storeClosedMessage,
+      freeDeliveryTarget: settings.freeDeliveryTarget,
+      partialFreeDeliveryEnabled: settings.partialFreeDeliveryEnabled,
+      partialFreeDeliveryThreshold: settings.partialFreeDeliveryThreshold,
+      partialFreeDeliveryDiscount: settings.partialFreeDeliveryDiscount,
+    };
+  }
+
   async updateSettings(dto: UpdateSettingsDto) {
     const current = await this.getSettings();
 

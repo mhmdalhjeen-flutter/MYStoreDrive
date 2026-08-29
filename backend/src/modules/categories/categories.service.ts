@@ -37,11 +37,11 @@ export class CategoriesService {
   }
 
   async findOne(id: string) {
-    return this.prisma.category.findUnique({
-      where: { id },
+    return this.prisma.category.findFirst({
+      where: { id, isActive: true },
       include: {
         products: {
-          where: { isActive: true, isAvailable: true },
+          where: { isActive: true, isAvailable: true, availability: { not: 'UNAVAILABLE' } },
           take: 20,
         },
         children: true,
@@ -50,11 +50,11 @@ export class CategoriesService {
   }
 
   async findBySlug(slug: string) {
-    return this.prisma.category.findUnique({
-      where: { slug },
+    return this.prisma.category.findFirst({
+      where: { slug, isActive: true },
       include: {
         products: {
-          where: { isActive: true, isAvailable: true },
+          where: { isActive: true, isAvailable: true, availability: { not: 'UNAVAILABLE' } },
           take: 20,
         },
         children: true,
@@ -79,7 +79,7 @@ export class CategoriesService {
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
-    const existing = await this.findOne(id);
+    const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
       throw new ResourceNotFoundException('Category', id);
     }
@@ -105,16 +105,18 @@ export class CategoriesService {
     });
   }
 
-  async deactivate(id: string) {
-    const existing = await this.findOne(id);
-    if (!existing) {
-      throw new ResourceNotFoundException('Category', id);
-    }
+  async setActive(id: string, isActive: boolean) {
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) throw new ResourceNotFoundException('Category', id);
+    return this.prisma.category.update({ where: { id }, data: { isActive } });
+  }
 
-    return this.prisma.category.update({
-      where: { id },
-      data: { isActive: false },
-    });
+  async deactivate(id: string) {
+    return this.setActive(id, false);
+  }
+
+  async activate(id: string) {
+    return this.setActive(id, true);
   }
 
   async remove(id: string) {

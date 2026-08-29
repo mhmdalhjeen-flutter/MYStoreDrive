@@ -46,6 +46,11 @@ export class AdminCategoriesController {
     return this.categoriesService.deactivate(id);
   }
 
+  @Patch(':id/activate')
+  async activate(@Param('id') id: string) {
+    return this.categoriesService.activate(id);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
