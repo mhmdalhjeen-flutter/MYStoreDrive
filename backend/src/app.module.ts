@@ -10,6 +10,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { CartModule } from './modules/cart/cart.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { HealthModule } from './modules/health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -33,6 +34,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     CartModule,
     DeliveryModule,
     SettingsModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

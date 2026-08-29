@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
@@ -47,7 +49,9 @@ export class AuthService {
     });
 
     // TODO: replace with real SMS provider
-    console.log(`OTP for ${phoneNumber}: ${otp}`);
+    if (this.configService.get<string>('NODE_ENV') !== 'production') {
+      this.logger.debug(`OTP for ${phoneNumber}: ${otp}`);
+    }
 
     return otp;
   }
@@ -166,6 +170,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
+      secret: this.refreshTokenSecret(),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '30d'),
     });
 
@@ -174,7 +179,9 @@ export class AuthService {
 
   async refreshToken(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.refreshTokenSecret(),
+      });
       const user = await this.usersService.findById(payload.sub);
 
       if (!user) {
@@ -185,6 +192,13 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  private refreshTokenSecret(): string {
+    return (
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET')
+    );
   }
 
   async hashPassword(password: string): Promise<string> {
