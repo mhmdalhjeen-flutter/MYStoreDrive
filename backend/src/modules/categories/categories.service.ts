@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   ResourceNotFoundException,
   ValidationException,
-} from '../../common/exceptions/business.exception';
-import { CreateCategoryDto } from './dtos/create-category.dto';
-import { UpdateCategoryDto } from './dtos/update-category.dto';
+} from "../../common/exceptions/business.exception";
+import { CreateCategoryDto } from "./dtos/create-category.dto";
+import { UpdateCategoryDto } from "./dtos/update-category.dto";
 
 @Injectable()
 export class CategoriesService {
@@ -20,7 +20,7 @@ export class CategoriesService {
           select: { products: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
@@ -32,7 +32,7 @@ export class CategoriesService {
           select: { products: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
@@ -41,7 +41,11 @@ export class CategoriesService {
       where: { id, isActive: true },
       include: {
         products: {
-          where: { isActive: true, isAvailable: true, availability: { not: 'UNAVAILABLE' } },
+          where: {
+            isActive: true,
+            isAvailable: true,
+            availability: { not: "UNAVAILABLE" },
+          },
           take: 20,
         },
         children: true,
@@ -54,7 +58,11 @@ export class CategoriesService {
       where: { slug, isActive: true },
       include: {
         products: {
-          where: { isActive: true, isAvailable: true, availability: { not: 'UNAVAILABLE' } },
+          where: {
+            isActive: true,
+            isAvailable: true,
+            availability: { not: "UNAVAILABLE" },
+          },
           take: 20,
         },
         children: true,
@@ -81,7 +89,7 @@ export class CategoriesService {
   async update(id: string, dto: UpdateCategoryDto) {
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
-      throw new ResourceNotFoundException('Category', id);
+      throw new ResourceNotFoundException("Category", id);
     }
 
     if (dto.slug && dto.slug !== existing.slug) {
@@ -107,7 +115,7 @@ export class CategoriesService {
 
   async setActive(id: string, isActive: boolean) {
     const existing = await this.prisma.category.findUnique({ where: { id } });
-    if (!existing) throw new ResourceNotFoundException('Category', id);
+    if (!existing) throw new ResourceNotFoundException("Category", id);
     return this.prisma.category.update({ where: { id }, data: { isActive } });
   }
 
@@ -129,24 +137,26 @@ export class CategoriesService {
     });
 
     if (!existing) {
-      throw new ResourceNotFoundException('Category', id);
+      throw new ResourceNotFoundException("Category", id);
     }
 
-    const hasReferences = existing.products.length > 0 || existing.children.length > 0;
+    const hasReferences =
+      existing.products.length > 0 || existing.children.length > 0;
 
     if (hasReferences) {
       const deactivated = await this.deactivate(id);
       return {
-        action: 'deactivated',
-        reason: 'Category has products or child categories and cannot be hard-deleted',
+        action: "deactivated",
+        reason:
+          "Category has products or child categories and cannot be hard-deleted",
         category: deactivated,
       };
     }
 
     await this.prisma.category.delete({ where: { id } });
     return {
-      action: 'deleted',
-      reason: 'No references found; category hard-deleted',
+      action: "deleted",
+      reason: "No references found; category hard-deleted",
       categoryId: id,
     };
   }
@@ -160,9 +170,11 @@ export class CategoriesService {
 
   private async validateParentExists(parentId: string | undefined) {
     if (!parentId) return;
-    const parent = await this.prisma.category.findUnique({ where: { id: parentId } });
+    const parent = await this.prisma.category.findUnique({
+      where: { id: parentId },
+    });
     if (!parent) {
-      throw new ResourceNotFoundException('Parent category', parentId);
+      throw new ResourceNotFoundException("Parent category", parentId);
     }
   }
 }

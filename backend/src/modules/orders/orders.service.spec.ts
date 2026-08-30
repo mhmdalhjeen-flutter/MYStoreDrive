@@ -1,36 +1,36 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from "@nestjs/testing";
 import {
   OrderStatus,
   PaymentStatus,
   Prisma,
   ProductAvailability,
-} from '@prisma/client';
-import { OrdersService } from './orders.service';
-import { CartService } from '../cart/cart.service';
-import { DeliveryService } from '../delivery/delivery.service';
-import { SettingsService } from '../settings/settings.service';
-import { ProductsService } from '../products/products.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { createMockPrismaService } from '../prisma/prisma.service.mock';
+} from "@prisma/client";
+import { OrdersService } from "./orders.service";
+import { CartService } from "../cart/cart.service";
+import { DeliveryService } from "../delivery/delivery.service";
+import { SettingsService } from "../settings/settings.service";
+import { ProductsService } from "../products/products.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { createMockPrismaService } from "../prisma/prisma.service.mock";
 import {
   InsufficientStockException,
   ResourceNotFoundException,
   StoreClosedException,
   ValidationException,
-} from '../../common/exceptions/business.exception';
+} from "../../common/exceptions/business.exception";
 
 const mockPrisma = createMockPrismaService();
 
-describe('OrdersService', () => {
+describe("OrdersService", () => {
   let service: OrdersService;
   let deliveryService: DeliveryService;
 
-  const userId = 'user-1';
-  const areaId = 'area-1';
+  const userId = "user-1";
+  const areaId = "area-1";
 
   const deliveryArea = {
     id: areaId,
-    name: 'رفديا',
+    name: "رفديا",
     deliveryFee: new Prisma.Decimal(15),
     eligibleForFreeDelivery: true,
     isActive: true,
@@ -44,8 +44,8 @@ describe('OrdersService', () => {
   };
 
   const limitedProduct = {
-    id: 'prod-1',
-    name: 'منتج محدود',
+    id: "prod-1",
+    name: "منتج محدود",
     price: new Prisma.Decimal(100),
     freeDeliveryValue: new Prisma.Decimal(5),
     availability: ProductAvailability.LIMITED,
@@ -56,8 +56,8 @@ describe('OrdersService', () => {
   };
 
   const unlimitedProduct = {
-    id: 'prod-2',
-    name: 'منتج غير محدود',
+    id: "prod-2",
+    name: "منتج غير محدود",
     price: new Prisma.Decimal(50),
     freeDeliveryValue: new Prisma.Decimal(2),
     availability: ProductAvailability.UNLIMITED,
@@ -84,7 +84,9 @@ describe('OrdersService', () => {
         {
           provide: SettingsService,
           useValue: {
-            getStoreStatus: jest.fn().mockResolvedValue({ isOpen: true, message: null }),
+            getStoreStatus: jest
+              .fn()
+              .mockResolvedValue({ isOpen: true, message: null }),
             getDeliverySettings: jest.fn().mockResolvedValue(deliverySettings),
           },
         },
@@ -107,7 +109,9 @@ describe('OrdersService', () => {
   }
 
   function setupDeliveryMocks(score = 10, deliveryFee = 0) {
-    (deliveryService.getActiveAreaById as jest.Mock).mockResolvedValue(deliveryArea);
+    (deliveryService.getActiveAreaById as jest.Mock).mockResolvedValue(
+      deliveryArea,
+    );
     (deliveryService.calculateScoreResult as jest.Mock).mockReturnValue({
       actualScore: score,
       displayedScore: Math.min(score, 10),
@@ -126,50 +130,50 @@ describe('OrdersService', () => {
     });
   }
 
-  describe('create', () => {
-    it('rejects checkout when store is closed', async () => {
-      const settingsService = service['settingsService'] as SettingsService;
+  describe("create", () => {
+    it("rejects checkout when store is closed", async () => {
+      const settingsService = service["settingsService"] as SettingsService;
       (settingsService.getStoreStatus as jest.Mock).mockResolvedValue({
         isOpen: false,
-        message: 'المتجر مغلق',
+        message: "المتجر مغلق",
       });
 
       await expect(
         service.create(userId, {
           deliveryAreaId: areaId,
-          deliveryAddress: 'شارع الرئيسي',
+          deliveryAddress: "شارع الرئيسي",
         }),
       ).rejects.toThrow(StoreClosedException);
     });
 
-    it('rejects checkout with empty cart', async () => {
+    it("rejects checkout with empty cart", async () => {
       setupDeliveryMocks();
       mockCart([]);
 
       await expect(
         service.create(userId, {
           deliveryAreaId: areaId,
-          deliveryAddress: 'شارع الرئيسي',
+          deliveryAddress: "شارع الرئيسي",
         }),
       ).rejects.toThrow(ValidationException);
     });
 
-    it('rejects invalid delivery area', async () => {
+    it("rejects invalid delivery area", async () => {
       (deliveryService.getActiveAreaById as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.create(userId, {
-          deliveryAreaId: 'missing',
-          deliveryAddress: 'شارع الرئيسي',
+          deliveryAreaId: "missing",
+          deliveryAddress: "شارع الرئيسي",
         }),
       ).rejects.toThrow(ResourceNotFoundException);
     });
 
-    it('creates order with snapshots and clears cart', async () => {
+    it("creates order with snapshots and clears cart", async () => {
       setupDeliveryMocks(10, 0);
       mockCart([
         {
-          id: 'cart-1',
+          id: "cart-1",
           userId,
           productId: limitedProduct.id,
           quantity: 2,
@@ -178,7 +182,7 @@ describe('OrdersService', () => {
           variant: null,
         },
         {
-          id: 'cart-2',
+          id: "cart-2",
           userId,
           productId: unlimitedProduct.id,
           quantity: 1,
@@ -191,7 +195,7 @@ describe('OrdersService', () => {
       mockPrisma.product.updateMany.mockResolvedValue({ count: 1 });
       mockPrisma.order.create.mockImplementation(({ data }) =>
         Promise.resolve({
-          id: 'order-1',
+          id: "order-1",
           ...data,
           items: data.items.create.map((item: any, index: number) => ({
             id: `item-${index}`,
@@ -205,8 +209,8 @@ describe('OrdersService', () => {
 
       const result = await service.create(userId, {
         deliveryAreaId: areaId,
-        deliveryAddress: '  شارع الرئيسي  ',
-        notes: 'اتصل قبل التوصيل',
+        deliveryAddress: "  شارع الرئيسي  ",
+        notes: "اتصل قبل التوصيل",
       });
 
       expect(result.status).toBe(OrderStatus.PENDING);
@@ -214,7 +218,7 @@ describe('OrdersService', () => {
       expect(result.subtotal).toEqual(new Prisma.Decimal(250));
       expect(result.deliveryFee).toEqual(new Prisma.Decimal(0));
       expect(result.total).toEqual(new Prisma.Decimal(250));
-      expect(result.deliveryAddress).toBe('شارع الرئيسي');
+      expect(result.deliveryAddress).toBe("شارع الرئيسي");
 
       expect(mockPrisma.product.updateMany).toHaveBeenCalledWith({
         where: {
@@ -255,11 +259,11 @@ describe('OrdersService', () => {
       });
     });
 
-    it('rejects when limited stock is insufficient (concurrent protection)', async () => {
+    it("rejects when limited stock is insufficient (concurrent protection)", async () => {
       setupDeliveryMocks();
       mockCart([
         {
-          id: 'cart-1',
+          id: "cart-1",
           userId,
           productId: limitedProduct.id,
           quantity: 5,
@@ -270,37 +274,40 @@ describe('OrdersService', () => {
       ]);
 
       mockPrisma.product.updateMany.mockResolvedValue({ count: 0 });
-      mockPrisma.product.findUnique.mockResolvedValue({ ...limitedProduct, stock: 2 });
+      mockPrisma.product.findUnique.mockResolvedValue({
+        ...limitedProduct,
+        stock: 2,
+      });
 
       await expect(
         service.create(userId, {
           deliveryAreaId: areaId,
-          deliveryAddress: 'شارع الرئيسي',
+          deliveryAddress: "شارع الرئيسي",
         }),
       ).rejects.toThrow(InsufficientStockException);
 
       expect(mockPrisma.order.create).not.toHaveBeenCalled();
     });
 
-    it('deducts variant stock for limited variant products', async () => {
+    it("deducts variant stock for limited variant products", async () => {
       setupDeliveryMocks(5, 7.5);
       const variant = {
-        id: 'var-1',
-        name: 'أحمر',
-        value: '#FF0000',
-        type: 'color',
+        id: "var-1",
+        name: "أحمر",
+        value: "#FF0000",
+        type: "color",
         priceAdjustment: new Prisma.Decimal(10),
         stock: 3,
       };
       const variantProduct = {
         ...limitedProduct,
-        id: 'prod-3',
+        id: "prod-3",
         variants: [variant],
       };
 
       mockCart([
         {
-          id: 'cart-1',
+          id: "cart-1",
           userId,
           productId: variantProduct.id,
           quantity: 2,
@@ -312,12 +319,12 @@ describe('OrdersService', () => {
 
       mockPrisma.productVariant.updateMany.mockResolvedValue({ count: 1 });
       mockPrisma.order.create.mockImplementation(({ data }) =>
-        Promise.resolve({ id: 'order-2', ...data, items: [], deliveryArea }),
+        Promise.resolve({ id: "order-2", ...data, items: [], deliveryArea }),
       );
 
       await service.create(userId, {
         deliveryAreaId: areaId,
-        deliveryAddress: 'شارع الرئيسي',
+        deliveryAddress: "شارع الرئيسي",
       });
 
       expect(mockPrisma.productVariant.updateMany).toHaveBeenCalledWith({
@@ -346,8 +353,8 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('buildOrderItemSnapshot', () => {
-    it('preserves historical price even if product price changes later', () => {
+  describe("buildOrderItemSnapshot", () => {
+    it("preserves historical price even if product price changes later", () => {
       const snapshot = service.buildOrderItemSnapshot({
         productId: limitedProduct.id,
         quantity: 1,
@@ -361,50 +368,53 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('findOneForCustomer', () => {
-    it('returns order for owner only', async () => {
-      mockPrisma.order.findFirst.mockResolvedValue({ id: 'order-1', customerId: userId });
+  describe("findOneForCustomer", () => {
+    it("returns order for owner only", async () => {
+      mockPrisma.order.findFirst.mockResolvedValue({
+        id: "order-1",
+        customerId: userId,
+      });
 
-      const result = await service.findOneForCustomer(userId, 'order-1');
-      expect(result.id).toBe('order-1');
+      const result = await service.findOneForCustomer(userId, "order-1");
+      expect(result.id).toBe("order-1");
     });
 
-    it('throws when order not owned by customer', async () => {
+    it("throws when order not owned by customer", async () => {
       mockPrisma.order.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.findOneForCustomer(userId, 'missing'),
+        service.findOneForCustomer(userId, "missing"),
       ).rejects.toThrow(ResourceNotFoundException);
     });
   });
 
-  describe('payment workflow', () => {
+  describe("payment workflow", () => {
     const pendingOrder = {
-      id: 'order-1',
+      id: "order-1",
       customerId: userId,
       status: OrderStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
     };
 
-    it('submits payment from pending state', async () => {
+    it("submits payment from pending state", async () => {
       mockPrisma.order.findFirst.mockResolvedValue(pendingOrder);
       mockPrisma.order.update.mockResolvedValue({
         ...pendingOrder,
         status: OrderStatus.PAYMENT_SUBMITTED,
         paymentStatus: PaymentStatus.SUBMITTED,
-        paymentReference: 'REF-123',
+        paymentReference: "REF-123",
       });
 
-      const result = await service.submitPayment(userId, 'order-1', {
-        paymentReference: 'REF-123',
-        paymentNotes: 'تحويل بنكي',
+      const result = await service.submitPayment(userId, "order-1", {
+        paymentReference: "REF-123",
+        paymentNotes: "تحويل بنكي",
       });
 
       expect(result.status).toBe(OrderStatus.PAYMENT_SUBMITTED);
       expect(result.paymentStatus).toBe(PaymentStatus.SUBMITTED);
     });
 
-    it('allows resubmit after rejection', async () => {
+    it("allows resubmit after rejection", async () => {
       mockPrisma.order.findFirst.mockResolvedValue({
         ...pendingOrder,
         status: OrderStatus.PAYMENT_REJECTED,
@@ -415,16 +425,16 @@ describe('OrdersService', () => {
         paymentStatus: PaymentStatus.SUBMITTED,
       });
 
-      await service.submitPayment(userId, 'order-1', {
-        paymentReference: 'REF-456',
+      await service.submitPayment(userId, "order-1", {
+        paymentReference: "REF-456",
       });
 
       expect(mockPrisma.order.update).toHaveBeenCalled();
     });
 
-    it('admin verify confirms order', async () => {
+    it("admin verify confirms order", async () => {
       mockPrisma.order.findUnique.mockResolvedValue({
-        id: 'order-1',
+        id: "order-1",
         status: OrderStatus.PAYMENT_SUBMITTED,
         paymentStatus: PaymentStatus.SUBMITTED,
       });
@@ -433,17 +443,17 @@ describe('OrdersService', () => {
         paymentStatus: PaymentStatus.VERIFIED,
       });
 
-      const result = await service.verifyPaymentAdmin('order-1', {
-        adminPaymentNotes: 'تم التحقق',
+      const result = await service.verifyPaymentAdmin("order-1", {
+        adminPaymentNotes: "تم التحقق",
       });
 
       expect(result.status).toBe(OrderStatus.CONFIRMED);
       expect(result.paymentStatus).toBe(PaymentStatus.VERIFIED);
     });
 
-    it('admin reject moves order to rejected state', async () => {
+    it("admin reject moves order to rejected state", async () => {
       mockPrisma.order.findUnique.mockResolvedValue({
-        id: 'order-1',
+        id: "order-1",
         status: OrderStatus.PAYMENT_SUBMITTED,
         paymentStatus: PaymentStatus.SUBMITTED,
       });
@@ -452,24 +462,24 @@ describe('OrdersService', () => {
         paymentStatus: PaymentStatus.REJECTED,
       });
 
-      const result = await service.rejectPaymentAdmin('order-1', {
-        adminPaymentNotes: 'مرجع غير صحيح',
+      const result = await service.rejectPaymentAdmin("order-1", {
+        adminPaymentNotes: "مرجع غير صحيح",
       });
 
       expect(result.status).toBe(OrderStatus.PAYMENT_REJECTED);
       expect(result.paymentStatus).toBe(PaymentStatus.REJECTED);
     });
 
-    it('rejects verify when payment not submitted', async () => {
+    it("rejects verify when payment not submitted", async () => {
       mockPrisma.order.findUnique.mockResolvedValue({
-        id: 'order-1',
+        id: "order-1",
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.PENDING,
       });
 
-      await expect(
-        service.verifyPaymentAdmin('order-1', {}),
-      ).rejects.toThrow(ValidationException);
+      await expect(service.verifyPaymentAdmin("order-1", {})).rejects.toThrow(
+        ValidationException,
+      );
     });
   });
 });

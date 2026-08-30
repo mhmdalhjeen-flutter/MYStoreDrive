@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ProductsService } from '../products/products.service';
-import { ResourceNotFoundException } from '../../common/exceptions/business.exception';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ProductsService } from "../products/products.service";
+import { ResourceNotFoundException } from "../../common/exceptions/business.exception";
 
 @Injectable()
 export class FavoritesService {
@@ -18,14 +18,14 @@ export class FavoritesService {
           include: { category: true, variants: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async add(userId: string, productId: string) {
     const product = await this.productsService.findOneActive(productId);
     if (!product) {
-      throw new ResourceNotFoundException('Product', productId);
+      throw new ResourceNotFoundException("Product", productId);
     }
 
     return this.prisma.favorite.upsert({
@@ -42,7 +42,7 @@ export class FavoritesService {
     });
 
     if (!favorite) {
-      throw new ResourceNotFoundException('Favorite', productId);
+      throw new ResourceNotFoundException("Favorite", productId);
     }
 
     await this.prisma.favorite.delete({

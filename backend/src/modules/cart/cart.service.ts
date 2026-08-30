@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { ProductsService } from '../products/products.service';
-import { DeliveryService } from '../delivery/delivery.service';
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+import { ProductsService } from "../products/products.service";
+import { DeliveryService } from "../delivery/delivery.service";
 import {
   ResourceNotFoundException,
   ValidationException,
   InsufficientStockException,
-} from '../../common/exceptions/business.exception';
+} from "../../common/exceptions/business.exception";
 
 export interface CartTotals {
   subtotal: number;
@@ -34,7 +34,7 @@ export class CartService {
     const cartItems = await this.prisma.cartItem.findMany({
       where: { userId },
       include: this.baseInclude,
-      orderBy: { createdAt: 'asc' as const },
+      orderBy: { createdAt: "asc" as const },
     });
 
     const [totals, delivery] = await Promise.all([
@@ -57,12 +57,12 @@ export class CartService {
     variantId?: string,
   ) {
     if (!quantity || quantity < 1) {
-      throw new ValidationException('Quantity must be at least 1');
+      throw new ValidationException("Quantity must be at least 1");
     }
 
     const product = await this.productsService.findOneActive(productId);
     if (!product) {
-      throw new ResourceNotFoundException('Product', productId);
+      throw new ResourceNotFoundException("Product", productId);
     }
 
     await this.validateVariantForProduct(product, variantId);
@@ -115,18 +115,14 @@ export class CartService {
     });
   }
 
-  async updateCartItem(
-    userId: string,
-    cartItemId: string,
-    quantity: number,
-  ) {
+  async updateCartItem(userId: string, cartItemId: string, quantity: number) {
     const cartItem = await this.prisma.cartItem.findUnique({
       where: { id: cartItemId },
       include: { product: true, variant: true },
     });
 
     if (!cartItem || cartItem.userId !== userId) {
-      throw new ResourceNotFoundException('Cart item', cartItemId);
+      throw new ResourceNotFoundException("Cart item", cartItemId);
     }
 
     if (quantity <= 0) {
@@ -159,7 +155,7 @@ export class CartService {
     });
 
     if (!cartItem || cartItem.userId !== userId) {
-      throw new ResourceNotFoundException('Cart item', cartItemId);
+      throw new ResourceNotFoundException("Cart item", cartItemId);
     }
 
     return this.prisma.cartItem.delete({
@@ -202,17 +198,14 @@ export class CartService {
 
     if (hasVariants && !variantId) {
       throw new ValidationException(
-        'This product requires a variant selection',
+        "This product requires a variant selection",
       );
     }
 
     if (variantId) {
       const variant = product.variants.find((v: any) => v.id === variantId);
       if (!variant) {
-        throw new ResourceNotFoundException(
-          'Product variant',
-          variantId,
-        );
+        throw new ResourceNotFoundException("Product variant", variantId);
       }
     }
   }

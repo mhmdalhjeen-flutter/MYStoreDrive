@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ProductsService } from '../products/products.service';
-import { CreateReviewDto } from './dtos/create-review.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ProductsService } from "../products/products.service";
+import { CreateReviewDto } from "./dtos/create-review.dto";
 import {
   ResourceNotFoundException,
   ValidationException,
-} from '../../common/exceptions/business.exception';
+} from "../../common/exceptions/business.exception";
 
 @Injectable()
 export class ReviewsService {
@@ -20,7 +20,7 @@ export class ReviewsService {
       include: {
         user: { select: { id: true, name: true, phoneNumber: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -30,7 +30,7 @@ export class ReviewsService {
         user: { select: { id: true, name: true, phoneNumber: true } },
         product: { select: { id: true, name: true, images: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -38,14 +38,14 @@ export class ReviewsService {
     return this.prisma.review.findMany({
       where: { userId },
       include: { product: { select: { id: true, name: true, images: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async create(userId: string, productId: string, dto: CreateReviewDto) {
     const product = await this.productsService.findOneActive(productId);
     if (!product) {
-      throw new ResourceNotFoundException('Product', productId);
+      throw new ResourceNotFoundException("Product", productId);
     }
 
     try {
@@ -61,8 +61,8 @@ export class ReviewsService {
         },
       });
     } catch (error: any) {
-      if (error?.code === 'P2002') {
-        throw new ValidationException('You have already reviewed this product');
+      if (error?.code === "P2002") {
+        throw new ValidationException("You have already reviewed this product");
       }
       throw error;
     }
@@ -74,7 +74,7 @@ export class ReviewsService {
     });
 
     if (!review) {
-      throw new ResourceNotFoundException('Review', productId);
+      throw new ResourceNotFoundException("Review", productId);
     }
 
     await this.prisma.review.delete({

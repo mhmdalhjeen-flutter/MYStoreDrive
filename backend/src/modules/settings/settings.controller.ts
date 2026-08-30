@@ -1,8 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
-import { Public } from '../../common/decorators/public.decorator';
-import { SettingsService } from './settings.service';
+import { Controller, Get } from "@nestjs/common";
+import { Public } from "../../common/decorators/public.decorator";
+import { SettingsService } from "./settings.service";
 
-@Controller('settings')
+@Controller("settings")
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
@@ -13,19 +13,19 @@ export class SettingsController {
   }
 
   @Public()
-  @Get('delivery')
+  @Get("delivery")
   async getDeliverySettings() {
     return this.settingsService.getDeliverySettings();
   }
 
   @Public()
-  @Get('store-status')
+  @Get("store-status")
   async getStoreStatus() {
     return this.settingsService.getStoreStatus();
   }
 
   @Public()
-  @Get('payment')
+  @Get("payment")
   async getPaymentSettings() {
     return this.settingsService.getPaymentSettings();
   }

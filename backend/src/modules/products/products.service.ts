@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   ResourceNotFoundException,
   ValidationException,
-} from '../../common/exceptions/business.exception';
-import { CreateProductDto, CreateVariantDto } from './dtos/create-product.dto';
-import { UpdateProductDto } from './dtos/update-product.dto';
+} from "../../common/exceptions/business.exception";
+import { CreateProductDto, CreateVariantDto } from "./dtos/create-product.dto";
+import { UpdateProductDto } from "./dtos/update-product.dto";
 
 @Injectable()
 export class ProductsService {
@@ -34,7 +34,7 @@ export class ProductsService {
           ...where,
           isActive: true,
           isAvailable: true,
-          availability: { not: 'UNAVAILABLE' },
+          availability: { not: "UNAVAILABLE" },
         };
 
     const [products, total] = await Promise.all([
@@ -69,7 +69,7 @@ export class ProductsService {
         id,
         isActive: true,
         isAvailable: true,
-        availability: { not: 'UNAVAILABLE' },
+        availability: { not: "UNAVAILABLE" },
       },
       include: this.baseInclude,
     });
@@ -80,7 +80,7 @@ export class ProductsService {
       where: {
         isActive: true,
         isAvailable: true,
-        availability: { not: 'UNAVAILABLE' },
+        availability: { not: "UNAVAILABLE" },
         isRecommended: true,
       },
       include: { category: true },
@@ -93,7 +93,7 @@ export class ProductsService {
       where: {
         isActive: true,
         isAvailable: true,
-        availability: { not: 'UNAVAILABLE' },
+        availability: { not: "UNAVAILABLE" },
         hasOffer: true,
         offerStartDate: { lte: now },
         OR: [{ offerEndDate: null }, { offerEndDate: { gte: now } }],
@@ -105,17 +105,19 @@ export class ProductsService {
   async search(query: string) {
     const normalized = query?.trim();
     if (!normalized || normalized.length < 2 || normalized.length > 100) {
-      throw new ValidationException('Search query must contain between 2 and 100 characters');
+      throw new ValidationException(
+        "Search query must contain between 2 and 100 characters",
+      );
     }
     return this.prisma.product.findMany({
       where: {
         isActive: true,
         isAvailable: true,
-        availability: { not: 'UNAVAILABLE' },
+        availability: { not: "UNAVAILABLE" },
         OR: [
-          { name: { contains: normalized, mode: 'insensitive' } },
-          { nameEn: { contains: normalized, mode: 'insensitive' } },
-          { description: { contains: normalized, mode: 'insensitive' } },
+          { name: { contains: normalized, mode: "insensitive" } },
+          { nameEn: { contains: normalized, mode: "insensitive" } },
+          { description: { contains: normalized, mode: "insensitive" } },
           { tags: { has: normalized } },
         ],
       },
@@ -128,7 +130,7 @@ export class ProductsService {
       where: { id: dto.categoryId },
     });
     if (!category) {
-      throw new ResourceNotFoundException('Category', dto.categoryId);
+      throw new ResourceNotFoundException("Category", dto.categoryId);
     }
 
     this.validateAvailabilityStock(dto.availability, dto.stock);
@@ -151,7 +153,10 @@ export class ProductsService {
       images: dto.images ?? [],
       hasOffer: dto.hasOffer ?? false,
       offerType: dto.offerType,
-      offerValue: dto.offerValue !== undefined ? new Prisma.Decimal(dto.offerValue) : undefined,
+      offerValue:
+        dto.offerValue !== undefined
+          ? new Prisma.Decimal(dto.offerValue)
+          : undefined,
       offerStartDate: dto.offerStartDate,
       offerEndDate: dto.offerEndDate,
     };
@@ -171,7 +176,7 @@ export class ProductsService {
   async update(id: string, dto: UpdateProductDto) {
     const existing = await this.findOne(id);
     if (!existing) {
-      throw new ResourceNotFoundException('Product', id);
+      throw new ResourceNotFoundException("Product", id);
     }
 
     if (dto.categoryId) {
@@ -179,7 +184,7 @@ export class ProductsService {
         where: { id: dto.categoryId },
       });
       if (!category) {
-        throw new ResourceNotFoundException('Category', dto.categoryId);
+        throw new ResourceNotFoundException("Category", dto.categoryId);
       }
     }
 
@@ -216,7 +221,7 @@ export class ProductsService {
   async deactivate(id: string) {
     const existing = await this.findOne(id);
     if (!existing) {
-      throw new ResourceNotFoundException('Product', id);
+      throw new ResourceNotFoundException("Product", id);
     }
 
     return this.prisma.product.update({
@@ -229,7 +234,7 @@ export class ProductsService {
   async remove(id: string) {
     const existing = await this.findOne(id);
     if (!existing) {
-      throw new ResourceNotFoundException('Product', id);
+      throw new ResourceNotFoundException("Product", id);
     }
 
     const [cartItemsCount, orderItemsCount] = await Promise.all([
@@ -240,16 +245,17 @@ export class ProductsService {
     if (cartItemsCount > 0 || orderItemsCount > 0) {
       const deactivated = await this.deactivate(id);
       return {
-        action: 'deactivated',
-        reason: 'Product is referenced by cart items or order items and cannot be hard-deleted',
+        action: "deactivated",
+        reason:
+          "Product is referenced by cart items or order items and cannot be hard-deleted",
         product: deactivated,
       };
     }
 
     await this.prisma.product.delete({ where: { id } });
     return {
-      action: 'deleted',
-      reason: 'No references found; product hard-deleted',
+      action: "deleted",
+      reason: "No references found; product hard-deleted",
       productId: id,
     };
   }
@@ -268,15 +274,15 @@ export class ProductsService {
       return false;
     }
 
-    if (product.availability === 'UNAVAILABLE') {
+    if (product.availability === "UNAVAILABLE") {
       return false;
     }
 
-    if (product.availability === 'UNLIMITED') {
+    if (product.availability === "UNLIMITED") {
       return true;
     }
 
-    if (product.availability === 'LIMITED') {
+    if (product.availability === "LIMITED") {
       if (variantId) {
         const variant = product.variants.find((v) => v.id === variantId);
         if (!variant) return false;
@@ -292,8 +298,10 @@ export class ProductsService {
     availability: string | undefined,
     stock: number | undefined,
   ) {
-    if (availability === 'LIMITED' && (stock === undefined || stock < 0)) {
-      throw new ValidationException('Limited products must have a stock quantity >= 0');
+    if (availability === "LIMITED" && (stock === undefined || stock < 0)) {
+      throw new ValidationException(
+        "Limited products must have a stock quantity >= 0",
+      );
     }
   }
 
@@ -304,18 +312,25 @@ export class ProductsService {
     offerStartDate?: Date;
     offerEndDate?: Date;
   }) {
-    if (input.hasOffer && (input.offerType == null || input.offerValue == null)) {
-      throw new ValidationException('Enabled offers require offerType and offerValue');
+    if (
+      input.hasOffer &&
+      (input.offerType == null || input.offerValue == null)
+    ) {
+      throw new ValidationException(
+        "Enabled offers require offerType and offerValue",
+      );
     }
     if (input.offerValue !== undefined && input.offerValue < 0) {
-      throw new ValidationException('Offer value must be non-negative');
+      throw new ValidationException("Offer value must be non-negative");
     }
     if (
       input.offerStartDate &&
       input.offerEndDate &&
       input.offerEndDate < input.offerStartDate
     ) {
-      throw new ValidationException('Offer end date must not be before offer start date');
+      throw new ValidationException(
+        "Offer end date must not be before offer start date",
+      );
     }
   }
 

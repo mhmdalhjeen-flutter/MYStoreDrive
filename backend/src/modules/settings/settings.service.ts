@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { ValidationException } from '../../common/exceptions/business.exception';
-import { UpdateSettingsDto } from './dtos/update-settings.dto';
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+import { ValidationException } from "../../common/exceptions/business.exception";
+import { UpdateSettingsDto } from "./dtos/update-settings.dto";
 
 @Injectable()
 export class SettingsService {
@@ -14,7 +14,7 @@ export class SettingsService {
     if (!settings) {
       settings = await this.prisma.settings.create({
         data: {
-          storeName: 'متجر',
+          storeName: "متجر",
           freeDeliveryTarget: new Prisma.Decimal(10),
           partialFreeDeliveryThreshold: new Prisma.Decimal(5),
           partialFreeDeliveryDiscount: 50,
@@ -59,7 +59,7 @@ export class SettingsService {
       threshold.greaterThanOrEqualTo(target)
     ) {
       throw new ValidationException(
-        'Partial free delivery threshold must be strictly less than free delivery target',
+        "Partial free delivery threshold must be strictly less than free delivery target",
       );
     }
 
@@ -68,7 +68,9 @@ export class SettingsService {
       data.freeDeliveryTarget = new Prisma.Decimal(dto.freeDeliveryTarget);
     }
     if (dto.partialFreeDeliveryThreshold !== undefined) {
-      data.partialFreeDeliveryThreshold = new Prisma.Decimal(dto.partialFreeDeliveryThreshold);
+      data.partialFreeDeliveryThreshold = new Prisma.Decimal(
+        dto.partialFreeDeliveryThreshold,
+      );
     }
 
     return this.prisma.settings.update({

@@ -7,14 +7,14 @@ import {
   Delete,
   Body,
   Param,
-} from '@nestjs/common';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { DeliveryService } from './delivery.service';
-import { CreateDeliveryAreaDto } from './dtos/create-delivery-area.dto';
-import { UpdateDeliveryAreaDto } from './dtos/update-delivery-area.dto';
-import { UserRole } from '../users/enums/user-role.enum';
+} from "@nestjs/common";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { DeliveryService } from "./delivery.service";
+import { CreateDeliveryAreaDto } from "./dtos/create-delivery-area.dto";
+import { UpdateDeliveryAreaDto } from "./dtos/update-delivery-area.dto";
+import { UserRole } from "../users/enums/user-role.enum";
 
-@Controller('admin/delivery/areas')
+@Controller("admin/delivery/areas")
 @Roles(UserRole.ADMIN)
 export class AdminDeliveryController {
   constructor(private readonly deliveryService: DeliveryService) {}
@@ -24,8 +24,8 @@ export class AdminDeliveryController {
     return this.deliveryService.getAllAreas();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  async findOne(@Param("id") id: string) {
     return this.deliveryService.getAreaById(id);
   }
 
@@ -34,26 +34,26 @@ export class AdminDeliveryController {
     return this.deliveryService.create(createDeliveryAreaDto);
   }
 
-  @Put(':id')
+  @Put(":id")
   async update(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() updateDeliveryAreaDto: UpdateDeliveryAreaDto,
   ) {
     return this.deliveryService.update(id, updateDeliveryAreaDto);
   }
 
-  @Patch(':id/activate')
-  async activate(@Param('id') id: string) {
+  @Patch(":id/activate")
+  async activate(@Param("id") id: string) {
     return this.deliveryService.setActive(id, true);
   }
 
-  @Patch(':id/deactivate')
-  async deactivate(@Param('id') id: string) {
+  @Patch(":id/deactivate")
+  async deactivate(@Param("id") id: string) {
     return this.deliveryService.setActive(id, false);
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
+  @Delete(":id")
+  async remove(@Param("id") id: string) {
     return this.deliveryService.remove(id);
   }
 }

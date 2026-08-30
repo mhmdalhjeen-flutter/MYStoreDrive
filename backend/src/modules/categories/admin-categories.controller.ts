@@ -6,14 +6,14 @@ import {
   Delete,
   Body,
   Param,
-} from '@nestjs/common';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { CategoriesService } from './categories.service';
-import { CreateCategoryDto } from './dtos/create-category.dto';
-import { UpdateCategoryDto } from './dtos/update-category.dto';
-import { UserRole } from '../users/enums/user-role.enum';
+} from "@nestjs/common";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { CategoriesService } from "./categories.service";
+import { CreateCategoryDto } from "./dtos/create-category.dto";
+import { UpdateCategoryDto } from "./dtos/update-category.dto";
+import { UserRole } from "../users/enums/user-role.enum";
 
-@Controller('admin/categories')
+@Controller("admin/categories")
 @Roles(UserRole.ADMIN)
 export class AdminCategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
@@ -23,8 +23,8 @@ export class AdminCategoriesController {
     return this.categoriesService.findAllAdmin();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  async findOne(@Param("id") id: string) {
     return this.categoriesService.findOne(id);
   }
 
@@ -33,26 +33,26 @@ export class AdminCategoriesController {
     return this.categoriesService.create(createCategoryDto);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   async update(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
-  @Patch(':id/deactivate')
-  async deactivate(@Param('id') id: string) {
+  @Patch(":id/deactivate")
+  async deactivate(@Param("id") id: string) {
     return this.categoriesService.deactivate(id);
   }
 
-  @Patch(':id/activate')
-  async activate(@Param('id') id: string) {
+  @Patch(":id/activate")
+  async activate(@Param("id") id: string) {
     return this.categoriesService.activate(id);
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
+  @Delete(":id")
+  async remove(@Param("id") id: string) {
     return this.categoriesService.remove(id);
   }
 }

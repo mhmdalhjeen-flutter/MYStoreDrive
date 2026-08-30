@@ -1,9 +1,9 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
-import { Public } from '../../common/decorators/public.decorator';
-import { ProductsService } from './products.service';
-import { PaginationDto } from '../../common/dtos/pagination.dto';
+import { Controller, Get, Query, Param } from "@nestjs/common";
+import { Public } from "../../common/decorators/public.decorator";
+import { ProductsService } from "./products.service";
+import { PaginationDto } from "../../common/dtos/pagination.dto";
 
-@Controller('products')
+@Controller("products")
 @Public()
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -11,7 +11,7 @@ export class ProductsController {
   @Get()
   async findAll(
     @Query() paginationDto: PaginationDto,
-    @Query('categoryId') categoryId?: string,
+    @Query("categoryId") categoryId?: string,
   ) {
     return this.productsService.findAll({
       skip: paginationDto.skip,
@@ -25,23 +25,23 @@ export class ProductsController {
     });
   }
 
-  @Get('recommended')
+  @Get("recommended")
   async getRecommended() {
     return this.productsService.findRecommended();
   }
 
-  @Get('offers')
+  @Get("offers")
   async getOffers() {
     return this.productsService.findOffers();
   }
 
-  @Get('search')
-  async search(@Query('q') query: string) {
+  @Get("search")
+  async search(@Query("q") query: string) {
     return this.productsService.search(query);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  async findOne(@Param("id") id: string) {
     return this.productsService.findOneActive(id);
   }
 }

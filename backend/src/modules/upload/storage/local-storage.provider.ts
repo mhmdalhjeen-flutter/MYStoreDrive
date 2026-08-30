@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { mkdir, writeFile, unlink } from 'fs/promises';
-import { join, extname } from 'path';
-import { randomUUID } from 'crypto';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { mkdir, writeFile, unlink } from "fs/promises";
+import { join, extname } from "path";
+import { randomUUID } from "crypto";
 import {
   StorageProvider,
   StoredFile,
   UploadCategory,
-} from './storage.interface';
+} from "./storage.interface";
 
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
@@ -15,10 +15,9 @@ export class LocalStorageProvider implements StorageProvider {
   private readonly publicBaseUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.uploadDir =
-      this.configService.get<string>('UPLOAD_DIR') || 'uploads';
+    this.uploadDir = this.configService.get<string>("UPLOAD_DIR") || "uploads";
     this.publicBaseUrl =
-      this.configService.get<string>('BACKEND_URL') || 'http://localhost:3001';
+      this.configService.get<string>("BACKEND_URL") || "http://localhost:3001";
   }
 
   async save(
@@ -28,9 +27,7 @@ export class LocalStorageProvider implements StorageProvider {
   ): Promise<StoredFile> {
     const ext = extname(file.originalname).toLowerCase();
     const safeName = `${randomUUID()}${ext}`;
-    const relativeDir = ownerId
-      ? join(category, ownerId)
-      : category;
+    const relativeDir = ownerId ? join(category, ownerId) : category;
     const relativePath = join(relativeDir, safeName);
     const absoluteDir = join(process.cwd(), this.uploadDir, relativeDir);
     const absolutePath = join(process.cwd(), this.uploadDir, relativePath);
@@ -38,7 +35,7 @@ export class LocalStorageProvider implements StorageProvider {
     await mkdir(absoluteDir, { recursive: true });
     await writeFile(absolutePath, file.buffer);
 
-    const key = relativePath.replace(/\\/g, '/');
+    const key = relativePath.replace(/\\/g, "/");
     const url = `${this.publicBaseUrl}/uploads/${key}`;
 
     return {

@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import {
   OrderStatus,
   PaymentStatus,
   ProductAvailability,
   Prisma,
-} from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+} from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class AnalyticsService {
@@ -32,7 +32,7 @@ export class AnalyticsService {
     ] = await Promise.all([
       this.prisma.order.count(),
       this.prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
-      this.prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      this.prisma.user.count({ where: { role: "CUSTOMER" } }),
       this.prisma.product.count(),
       this.prisma.product.count({
         where: {
@@ -66,17 +66,28 @@ export class AnalyticsService {
         where: { paymentStatus: PaymentStatus.VERIFIED },
         _avg: { total: true },
       }),
-      this.prisma.order.count({ where: { paymentStatus: PaymentStatus.SUBMITTED } }),
+      this.prisma.order.count({
+        where: { paymentStatus: PaymentStatus.SUBMITTED },
+      }),
       this.prisma.order.count({
         where: {
           status: {
-            in: [OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
+            in: [
+              OrderStatus.CONFIRMED,
+              OrderStatus.PROCESSING,
+              OrderStatus.SHIPPED,
+              OrderStatus.DELIVERED,
+            ],
           },
         },
       }),
-      this.prisma.order.count({ where: { paymentStatus: PaymentStatus.REJECTED } }),
+      this.prisma.order.count({
+        where: { paymentStatus: PaymentStatus.REJECTED },
+      }),
       this.prisma.favorite.count(),
-      this.prisma.supportMessage.count({ where: { isAdmin: false, isRead: false } }),
+      this.prisma.supportMessage.count({
+        where: { isAdmin: false, isRead: false },
+      }),
     ]);
 
     return {

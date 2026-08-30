@@ -1,7 +1,7 @@
 export enum UploadCategory {
-  PRODUCT_IMAGE = 'products',
-  PAYMENT_PROOF = 'payment-proofs',
-  PAYMENT_QR = 'payment-qr',
+  PRODUCT_IMAGE = "products",
+  PAYMENT_PROOF = "payment-proofs",
+  PAYMENT_QR = "payment-qr",
 }
 
 export interface StoredFile {
@@ -22,4 +22,4 @@ export interface StorageProvider {
   delete(key: string): Promise<void>;
 }
 
-export const STORAGE_PROVIDER = Symbol('STORAGE_PROVIDER');
+export const STORAGE_PROVIDER = Symbol("STORAGE_PROVIDER");

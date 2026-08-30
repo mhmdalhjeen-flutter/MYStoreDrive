@@ -1,11 +1,15 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/enums/user-role.enum';
-import { InvalidOTPException } from '../../common/exceptions/business.exception';
-import * as bcrypt from 'bcrypt';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../prisma/prisma.service";
+import { UsersService } from "../users/users.service";
+import { UserRole } from "../users/enums/user-role.enum";
+import { InvalidOTPException } from "../../common/exceptions/business.exception";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
@@ -22,7 +26,11 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setMinutes(
       expiresAt.getMinutes() +
-        parseInt(this.configService.get<string>('OTP_EXPIRES_IN', '10m').replace('m', '')),
+        parseInt(
+          this.configService
+            .get<string>("OTP_EXPIRES_IN", "10m")
+            .replace("m", ""),
+        ),
     );
 
     const existingOtp = await this.prisma.otpRecord.findFirst({
@@ -35,7 +43,7 @@ export class AuthService {
     });
 
     if (existingOtp) {
-      throw new ConflictException('Please wait before requesting another OTP');
+      throw new ConflictException("Please wait before requesting another OTP");
     }
 
     await this.prisma.otpRecord.create({
@@ -47,12 +55,19 @@ export class AuthService {
     });
 
     // TODO: replace with real SMS provider
-    console.log(`OTP for ${phoneNumber}: ${otp}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `OTP generated for ${phoneNumber} (dev only — not logged in production)`,
+      );
+    }
 
     return otp;
   }
 
-  async verifyOTP(phoneNumber: string, code: string): Promise<{ valid: boolean; isNewUser: boolean }> {
+  async verifyOTP(
+    phoneNumber: string,
+    code: string,
+  ): Promise<{ valid: boolean; isNewUser: boolean }> {
     const otpRecord = await this.prisma.otpRecord.findFirst({
       where: {
         phoneNumber,
@@ -62,16 +77,21 @@ export class AuthService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     if (!otpRecord) {
-      throw new InvalidOTPException('Invalid or expired OTP');
+      throw new InvalidOTPException("Invalid or expired OTP");
     }
 
-    if (otpRecord.attempts >= parseInt(this.configService.get<string>('OTP_MAX_ATTEMPTS', '3'))) {
-      throw new InvalidOTPException('Too many attempts. Please request a new OTP');
+    if (
+      otpRecord.attempts >=
+      parseInt(this.configService.get<string>("OTP_MAX_ATTEMPTS", "3"))
+    ) {
+      throw new InvalidOTPException(
+        "Too many attempts. Please request a new OTP",
+      );
     }
 
     const isValid = await this.compareOTP(code, otpRecord.code);
@@ -81,7 +101,7 @@ export class AuthService {
         where: { id: otpRecord.id },
         data: { attempts: otpRecord.attempts + 1 },
       });
-      throw new InvalidOTPException('Invalid OTP');
+      throw new InvalidOTPException("Invalid OTP");
     }
 
     await this.prisma.otpRecord.update({
@@ -109,7 +129,7 @@ export class AuthService {
     const user = await this.usersService.findByPhoneNumber(phoneNumber);
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException("User not found");
     }
 
     const tokens = await this.generateTokens(user.id, user.role);
@@ -133,17 +153,17 @@ export class AuthService {
     });
 
     if (!user || user.role !== UserRole.ADMIN) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     if (!user.passwordHash) {
-      throw new UnauthorizedException('Admin must have a password');
+      throw new UnauthorizedException("Admin must have a password");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const tokens = await this.generateTokens(user.id, user.role);
@@ -166,7 +186,10 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '30d'),
+      expiresIn: this.configService.get<string>(
+        "JWT_REFRESH_EXPIRES_IN",
+        "30d",
+      ),
     });
 
     return { accessToken, refreshToken };
@@ -178,17 +201,19 @@ export class AuthService {
       const user = await this.usersService.findById(payload.sub);
 
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        throw new UnauthorizedException("User not found");
       }
 
       return this.generateTokens(user.id, user.role);
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException("Invalid refresh token");
     }
   }
 
   async hashPassword(password: string): Promise<string> {
-    const salt = await bcrypt.genSalt(parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12')));
+    const salt = await bcrypt.genSalt(
+      parseInt(this.configService.get<string>("BCRYPT_ROUNDS", "12")),
+    );
     return bcrypt.hash(password, salt);
   }
 
@@ -197,7 +222,9 @@ export class AuthService {
   }
 
   private async hashOTP(code: string): Promise<string> {
-    const salt = await bcrypt.genSalt(parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12')));
+    const salt = await bcrypt.genSalt(
+      parseInt(this.configService.get<string>("BCRYPT_ROUNDS", "12")),
+    );
     return bcrypt.hash(code, salt);
   }
 

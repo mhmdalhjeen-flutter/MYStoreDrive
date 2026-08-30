@@ -4,25 +4,43 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-  // Create default admin user
-  const adminPassword = await bcrypt.hash('admin123456', 12);
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      'SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD environment variables must be set before running the seed.',
+    );
+  }
+
+  if (adminPassword.length < 12) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 12 characters.');
+  }
+
+  console.log('Starting database seed...');
+
+  const adminPasswordHash = await bcrypt.hash(
+    adminPassword,
+    parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
+  );
 
   await prisma.user.upsert({
-    where: { email: 'admin@store.com' },
-    update: {},
+    where: { email: adminEmail },
+    update: {
+      passwordHash: adminPasswordHash,
+      role: UserRole.ADMIN,
+      isPhoneVerified: true,
+    },
     create: {
-      phoneNumber: '0590000000',
-      email: 'admin@store.com',
-      name: 'مدير النظام',
-      passwordHash: adminPassword,
+      phoneNumber: process.env.SEED_ADMIN_PHONE || '0590000000',
+      email: adminEmail,
+      name: process.env.SEED_ADMIN_NAME || 'مدير النظام',
+      passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
       isPhoneVerified: true,
     },
   });
 
-  // Create default settings
   const existingSettings = await prisma.settings.findFirst();
   await prisma.settings.upsert({
     where: { id: existingSettings?.id ?? 'default' },
@@ -37,11 +55,10 @@ async function main() {
       partialFreeDeliveryThreshold: new Prisma.Decimal(5),
       partialFreeDeliveryDiscount: 50,
       paymentInstructions: 'يرجى التحويل إلى الحساب التالي وإرسال صورة الإيصال',
-      paymentAccountDetails: 'بنك فلسطين - حساب رقم: 1234567890',
+      paymentAccountDetails: 'يرجى تحديث تفاصيل الحساب من لوحة الإدارة',
     },
   });
 
-  // Create sample delivery areas
   const deliveryAreas = [
     { name: 'رفديا', deliveryFee: 15, eligibleForFreeDelivery: true },
     { name: 'المنطقة الجنوبية', deliveryFee: 20, eligibleForFreeDelivery: true },
@@ -64,7 +81,6 @@ async function main() {
     });
   }
 
-  // Create sample categories
   const categories = [
     { name: 'إلكترونيات', slug: 'electronics', description: 'منتجات إلكترونية' },
     { name: 'ملابس', slug: 'clothing', description: 'ملابس رجالية ونسائية' },
@@ -85,12 +101,12 @@ async function main() {
     });
   }
 
-  console.log('✅ Database seed completed successfully');
+  console.log('Database seed completed successfully');
 }
 
 main()
   .catch((error) => {
-    console.error('❌ Database seed failed:', error);
+    console.error('Database seed failed:', error instanceof Error ? error.message : error);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateAnnouncementDto } from './dtos/create-announcement.dto';
-import { UpdateAnnouncementDto } from './dtos/update-announcement.dto';
-import { ResourceNotFoundException } from '../../common/exceptions/business.exception';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateAnnouncementDto } from "./dtos/create-announcement.dto";
+import { UpdateAnnouncementDto } from "./dtos/update-announcement.dto";
+import { ResourceNotFoundException } from "../../common/exceptions/business.exception";
 
 @Injectable()
 export class AnnouncementsService {
@@ -16,13 +16,13 @@ export class AnnouncementsService {
         startDate: { lte: now },
         OR: [{ endDate: null }, { endDate: { gte: now } }],
       },
-      orderBy: [{ priority: 'desc' }, { startDate: 'desc' }],
+      orderBy: [{ priority: "desc" }, { startDate: "desc" }],
     });
   }
 
   async findAllAdmin() {
     return this.prisma.announcement.findMany({
-      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
     });
   }
 
@@ -31,7 +31,7 @@ export class AnnouncementsService {
       where: { id },
     });
     if (!announcement) {
-      throw new ResourceNotFoundException('Announcement', id);
+      throw new ResourceNotFoundException("Announcement", id);
     }
     return announcement;
   }

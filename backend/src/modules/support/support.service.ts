@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateSupportMessageDto } from './dtos/create-support-message.dto';
-import { AdminReplySupportDto } from './dtos/admin-reply-support.dto';
-import { ResourceNotFoundException } from '../../common/exceptions/business.exception';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateSupportMessageDto } from "./dtos/create-support-message.dto";
+import { AdminReplySupportDto } from "./dtos/admin-reply-support.dto";
+import { ResourceNotFoundException } from "../../common/exceptions/business.exception";
 
 @Injectable()
 export class SupportService {
@@ -11,7 +11,7 @@ export class SupportService {
   async findMine(userId: string) {
     return this.prisma.supportMessage.findMany({
       where: { userId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
   }
 
@@ -21,7 +21,7 @@ export class SupportService {
         where: { id: dto.orderId, customerId: userId },
       });
       if (!order) {
-        throw new ResourceNotFoundException('Order', dto.orderId);
+        throw new ResourceNotFoundException("Order", dto.orderId);
       }
     }
 
@@ -42,7 +42,7 @@ export class SupportService {
       include: {
         user: { select: { id: true, name: true, phoneNumber: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -52,14 +52,14 @@ export class SupportService {
       include: {
         user: { select: { id: true, name: true, phoneNumber: true } },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
   }
 
   async replyAdmin(userId: string, dto: AdminReplySupportDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new ResourceNotFoundException('User', userId);
+      throw new ResourceNotFoundException("User", userId);
     }
 
     await this.prisma.supportMessage.updateMany({
@@ -70,7 +70,7 @@ export class SupportService {
     return this.prisma.supportMessage.create({
       data: {
         userId,
-        subject: dto.subject?.trim() || 'رد الإدارة',
+        subject: dto.subject?.trim() || "رد الإدارة",
         message: dto.message.trim(),
         isAdmin: true,
       },

@@ -49,6 +49,9 @@ Thumbs.db
 logs/
 *.log
 
+# TypeScript build info
+*.tsbuildinfo
+
 # Temporary files
 tmp/
 temp/

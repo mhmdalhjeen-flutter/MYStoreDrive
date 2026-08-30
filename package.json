@@ -26,6 +26,7 @@
     "lint:store": "cd store && npm run lint",
     "lint:admin": "cd admin && npm run lint",
     "db:migrate": "cd backend && npm run prisma:migrate",
+    "db:migrate:deploy": "cd backend && npm run prisma:migrate:deploy",
     "db:generate": "cd backend && npm run prisma:generate",
     "db:studio": "cd backend && npm run prisma:studio",
     "db:seed": "cd backend && npm run prisma:seed"

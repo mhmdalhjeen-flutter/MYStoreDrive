@@ -1,14 +1,14 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   STORAGE_PROVIDER,
   StorageProvider,
   UploadCategory,
   StoredFile,
-} from './storage/storage.interface';
-import { ValidationException } from '../../common/exceptions/business.exception';
+} from "./storage/storage.interface";
+import { ValidationException } from "../../common/exceptions/business.exception";
 
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 @Injectable()
 export class UploadService {
@@ -20,15 +20,15 @@ export class UploadService {
     @Inject(STORAGE_PROVIDER) private storage: StorageProvider,
   ) {
     this.maxFileSize = parseInt(
-      this.configService.get<string>('MAX_FILE_SIZE', '5242880'),
+      this.configService.get<string>("MAX_FILE_SIZE", "5242880"),
       10,
     );
     const allowed = this.configService.get<string>(
-      'ALLOWED_IMAGE_TYPES',
-      'image/jpeg,image/png,image/webp',
+      "ALLOWED_IMAGE_TYPES",
+      "image/jpeg,image/png,image/webp",
     );
     this.allowedMimeTypes = new Set(
-      allowed.split(',').map((type) => type.trim()),
+      allowed.split(",").map((type) => type.trim()),
     );
   }
 
@@ -42,15 +42,15 @@ export class UploadService {
   }
 
   async deleteFile(key: string): Promise<void> {
-    if (!key || key.includes('..')) {
-      throw new ValidationException('Invalid file key');
+    if (!key || key.includes("..")) {
+      throw new ValidationException("Invalid file key");
     }
     await this.storage.delete(key);
   }
 
   private validateFile(file: Express.Multer.File | undefined) {
     if (!file) {
-      throw new ValidationException('No file uploaded');
+      throw new ValidationException("No file uploaded");
     }
 
     if (file.size > this.maxFileSize) {
@@ -60,19 +60,19 @@ export class UploadService {
     }
 
     if (!this.allowedMimeTypes.has(file.mimetype)) {
-      throw new ValidationException('File type is not allowed');
+      throw new ValidationException("File type is not allowed");
     }
 
     const ext = file.originalname
-      .slice(file.originalname.lastIndexOf('.'))
+      .slice(file.originalname.lastIndexOf("."))
       .toLowerCase();
 
     if (!ALLOWED_EXTENSIONS.has(ext)) {
-      throw new ValidationException('File extension is not allowed');
+      throw new ValidationException("File extension is not allowed");
     }
 
     if (!file.buffer || file.buffer.length === 0) {
-      throw new ValidationException('Uploaded file is empty');
+      throw new ValidationException("Uploaded file is empty");
     }
   }
 }
