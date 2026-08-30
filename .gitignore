@@ -12,6 +12,7 @@ build/
 dist/
 .next/
 out/
+.vercel/
 
 # Misc
 .DS_Store

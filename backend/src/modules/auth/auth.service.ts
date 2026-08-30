@@ -186,6 +186,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
+      secret: this.getRefreshSecret(),
       expiresIn: this.configService.get<string>(
         "JWT_REFRESH_EXPIRES_IN",
         "30d",
@@ -197,7 +198,9 @@ export class AuthService {
 
   async refreshToken(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.getRefreshSecret(),
+      });
       const user = await this.usersService.findById(payload.sub);
 
       if (!user) {
@@ -219,6 +222,14 @@ export class AuthService {
 
   async comparePassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
+  }
+
+  private getRefreshSecret(): string {
+    return (
+      this.configService.get<string>("JWT_REFRESH_SECRET") ||
+      this.configService.get<string>("JWT_SECRET") ||
+      ""
+    );
   }
 
   private async hashOTP(code: string): Promise<string> {

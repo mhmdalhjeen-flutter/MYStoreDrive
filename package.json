@@ -17,6 +17,8 @@
     "build:backend": "cd backend && npm run build",
     "build:store": "cd store && npm run build",
     "build:admin": "cd admin && npm run build",
+    "build:store:cloudflare": "cd store && npm run pages:build",
+    "build:admin:cloudflare": "cd admin && npm run pages:build",
     "test": "npm run test:backend && npm run test:store && npm run test:admin",
     "test:backend": "cd backend && npm run test",
     "test:store": "cd store && npm run test",

@@ -10,9 +10,14 @@ import * as winston from "winston";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
 import { validateEnvForRuntime } from "./config/env.validation";
+import {
+  getCorsOrigins,
+  validateCorsOriginsForProduction,
+} from "./config/cors.config";
 
 async function bootstrap() {
   validateEnvForRuntime();
+  validateCorsOriginsForProduction();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: WinstonModule.createLogger({
@@ -71,11 +76,10 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const storeOrigin = process.env.STORE_FRONTEND_URL || "http://localhost:3000";
-  const adminOrigin = process.env.ADMIN_FRONTEND_URL || "http://localhost:3002";
+  const corsOrigins = getCorsOrigins();
 
   app.enableCors({
-    origin: [storeOrigin, adminOrigin],
+    origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

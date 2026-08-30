@@ -1,25 +1,22 @@
+const { assertProductionApiUrl, getImageRemotePatterns } = require('./next.config.helpers');
+
+assertProductionApiUrl();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
-  },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3001',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3001',
-        pathname: '/**',
-      },
-    ],
+    remotePatterns: getImageRemotePatterns(),
   },
 };
+
+if (process.env.NODE_ENV === 'development') {
+  try {
+    const { setupDevPlatform } = require('@cloudflare/next-on-pages/next-dev');
+    setupDevPlatform();
+  } catch {
+    // Optional — local dev works without Cloudflare dev platform
+  }
+}
 
 module.exports = nextConfig;

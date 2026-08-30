@@ -1,0 +1,7 @@
+# Cloudflare Pages — Admin dashboard
+# Used for local preview with `npm run pages:preview` (optional).
+name = "admin-dashboard"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+pages_build_output_dir = ".vercel/output/static"

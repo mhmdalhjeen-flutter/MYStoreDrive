@@ -1,0 +1,7 @@
+# Cloudflare Pages — Store frontend
+# Used for local preview with `npm run pages:preview` (optional).
+name = "store-frontend"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+pages_build_output_dir = ".vercel/output/static"

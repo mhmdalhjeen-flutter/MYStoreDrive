@@ -83,9 +83,13 @@ export function validateEnvForRuntime() {
         "JWT_SECRET must be at least 32 characters in production",
       );
     }
-    if (!process.env.STORE_FRONTEND_URL || !process.env.ADMIN_FRONTEND_URL) {
+    const hasCorsList = Boolean(process.env.CORS_ORIGINS?.trim());
+    const hasLegacyCors =
+      Boolean(process.env.STORE_FRONTEND_URL) &&
+      Boolean(process.env.ADMIN_FRONTEND_URL);
+    if (!hasCorsList && !hasLegacyCors) {
       throw new Error(
-        "STORE_FRONTEND_URL and ADMIN_FRONTEND_URL are required in production",
+        "CORS_ORIGINS (or STORE_FRONTEND_URL + ADMIN_FRONTEND_URL) is required in production",
       );
     }
   }
