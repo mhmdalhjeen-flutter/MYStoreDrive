@@ -16,7 +16,7 @@
 | Prisma schema (`directUrl`) | ✅ Updated |
 | Migration `20250830100000_init` | ✅ Applied (schema up to date) |
 | Destructive operations | ❌ None (`migrate reset` not used) |
-| Database seed | ⏸ **Pending** — seed credentials not yet provided |
+| Database seed | ⏸ **Blocked** — `SEED_ADMIN_*` not present in `backend/.env` (see §4) |
 | Backend health (`/health`, `/health/db`) | ✅ Pass |
 | Public API smoke tests | ✅ Pass (empty catalog — expected pre-seed) |
 | Static verification | ✅ Pass |
@@ -60,15 +60,21 @@ npx prisma migrate status   # Database schema is up to date!
 
 ## 4. Seed Status
 
-**Not run** — `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` were not available in the environment.
-
-### Action required (secure secret mechanism)
-
-Add to **`backend/.env`** (never commit):
+**Not run (2026-08-30, second attempt)** — `npm run prisma:seed` / `npx prisma db seed` failed:
 
 ```
-SEED_ADMIN_EMAIL=your-admin@example.com
-SEED_ADMIN_PASSWORD=<min 12 characters, not admin123456>
+SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD environment variables must be set before running the seed.
+```
+
+**Root cause:** Cursor secure secrets were not written to the gitignored file `backend/.env`. Prisma loads seed variables from that file (or the process environment). As of the seed attempt, `backend/.env` contained only `DATABASE_URL`, JWT, and server vars — no `SEED_ADMIN_*` lines.
+
+### Fix (required before seed can run)
+
+Add these two lines to **`backend/.env`** via the secure secret mechanism (never commit, never paste in chat):
+
+```
+SEED_ADMIN_EMAIL=...
+SEED_ADMIN_PASSWORD=...   # min 12 characters
 ```
 
 Then run:
@@ -79,6 +85,12 @@ node backend/scripts/verify-db.cjs   # expect user_count >= 1
 ```
 
 Seed creates: admin user, default settings, sample delivery areas, sample categories.
+
+### Post-seed verification (not yet run)
+
+- Admin exists in `User` table with role `ADMIN`
+- `POST /api/auth/admin/login` returns tokens
+- `GET /api/admin/settings` with Bearer token returns 200
 
 ---
 
@@ -102,7 +114,9 @@ Backend started locally against Neon (`npm run start:dev`, port 3001):
 | `GET /api/products?page=1&limit=5` | 200 | `{ products: [], total: 0 }` |
 | `GET /api/delivery/areas` | 200 | `[]` (pre-seed) |
 
-Authenticated flows (admin login, cart, checkout) **blocked until seed** completes.
+| `POST /api/auth/admin/login` (invalid creds) | 401 | Expected pre-seed (no admin user yet) |
+
+Authenticated admin flows **blocked until seed** completes and valid credentials are in `backend/.env`.
 
 ---
 
@@ -200,6 +214,8 @@ Arabic RTL UI unchanged. Store and Admin builds succeed with these settings.
 
 ## 14. Phase L Status
 
-**✅ MOSTLY COMPLETE** — Neon PostgreSQL is connected, migrated, and verified. Seed and authenticated API tests remain pending until `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` are provided through the secure secret mechanism.
+**✅ MOSTLY COMPLETE** — Neon PostgreSQL is connected, migrated, health-verified, and all static checks pass.
 
-**No Neon projects were created, modified, or deleted. No Neon CLI authorization was used.**
+**⏸ Seed + admin auth tests remain blocked** until `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are added to **`backend/.env`** (not just the Cursor secrets panel).
+
+**No Neon projects were created, modified, or deleted. No Neon CLI authorization was used. No destructive database operations were performed.**

@@ -59,6 +59,8 @@ npx prisma migrate status
 
 Seed (requires `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`):
 
+> **Important:** Seed credentials must be present in the gitignored file `backend/.env`. Cursor secure secrets are not read automatically unless they are written to this file.
+
 ```bash
 npm run db:seed
 ```
