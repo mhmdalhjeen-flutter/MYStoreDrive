@@ -12,6 +12,34 @@ export function getErrorMessage(error: unknown): string {
   return 'حدث خطأ غير متوقع';
 }
 
+/** Login-specific messages — never reveal whether the email exists. */
+export function getLoginErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string | string[] } };
+      code?: string;
+      message?: string;
+    };
+    if (!axiosError.response) {
+      return 'تعذر الاتصال بالخادم، حاول مرة أخرى.';
+    }
+    const status = axiosError.response.status;
+    if (status === 401 || status === 403) {
+      return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+    }
+  }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    ((error as { code?: string }).code === 'ERR_NETWORK' ||
+      (error as { code?: string }).code === 'ECONNABORTED')
+  ) {
+    return 'تعذر الاتصال بالخادم، حاول مرة أخرى.';
+  }
+  return 'حدث خطأ غير متوقع';
+}
+
 export const ORDER_STATUS_AR: Record<string, string> = {
   PENDING: 'قيد الانتظار',
   PAYMENT_SUBMITTED: 'تم إرسال الدفع',
