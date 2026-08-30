@@ -4,7 +4,8 @@
 **Branch:** `main`  
 **Workspace:** `C:\رفع للمستقل\my store`  
 **Neon project:** `yagota` (`rough-butterfly-97087820`)  
-**Scope:** Database connection, migration, verification — **no deployment**
+**Product (user-facing):** **ياقوتة (Yaqouta)**  
+**Scope:** Database connection, migration, seed, verification — **no deployment**
 
 ---
 
@@ -16,9 +17,11 @@
 | Prisma schema (`directUrl`) | ✅ Updated |
 | Migration `20250830100000_init` | ✅ Applied (schema up to date) |
 | Destructive operations | ❌ None (`migrate reset` not used) |
-| Database seed | ⏸ **Blocked** — `SEED_ADMIN_*` not present in `backend/.env` (see §4) |
+| Database seed | ✅ **Complete** |
+| Admin user created | ✅ `mhmdadmin0023@admin.com` (role `ADMIN`) |
+| Admin login + authenticated APIs | ✅ Verified |
 | Backend health (`/health`, `/health/db`) | ✅ Pass |
-| Public API smoke tests | ✅ Pass (empty catalog — expected pre-seed) |
+| Public API smoke tests | ✅ Pass (post-seed data present) |
 | Static verification | ✅ Pass |
 | Secrets in Git | ✅ None tracked |
 
@@ -26,24 +29,14 @@
 
 ## 2. Neon Connection
 
-- **Method:** Connection strings provided via secure secret mechanism (no Neon CLI auth — avoids broad org/project permissions).
-- **Runtime URL:** Pooled connection (`-pooler` host, `sslmode=require`) → `DATABASE_URL` in gitignored `backend/.env`.
-- **Migration URL:** Direct connection (no `-pooler`, `sslmode=require`) → `DATABASE_URL_UNPOOLED` in gitignored `backend/.env`.
-- **Credentials:** Stored only in `backend/.env` (gitignored). **Not committed to Git.**
-
-Connection test (`backend/scripts/verify-db.cjs`):
-
-```
-connection: ok
-tables: Address, Announcement, AuditLog, CartItem, Category, DeliveryArea, Favorite, Order, OrderItem, OtpRecord, Product, ProductVariant, Review, Settings, SupportMessage, User, _prisma_migrations
-user_count: 0
-```
+- **Method:** Connection strings via secure secret mechanism (no Neon CLI auth).
+- **Runtime URL:** Pooled connection → `DATABASE_URL` in gitignored `backend/.env`.
+- **Migration URL:** Direct connection → `DATABASE_URL_UNPOOLED` in gitignored `backend/.env`.
+- **Credentials:** Stored only in `backend/.env`. **Not committed to Git.**
 
 ---
 
 ## 3. Migration Status
-
-Commands run:
 
 ```bash
 npx prisma migrate deploy   # No pending migrations
@@ -52,51 +45,46 @@ npx prisma migrate status   # Database schema is up to date!
 
 | Migration | Status |
 |-----------|--------|
-| `20250830100000_init` | Applied (`finished_at`: 2026-08-30) |
+| `20250830100000_init` | Applied |
 
-**Note:** `_prisma_migrations` contains one applied row and one row with `finished_at: null` (likely from an earlier interrupted attempt). `prisma migrate status` reports **up to date**; all expected tables exist. No reset or destructive fix was applied.
+No destructive operations were performed.
 
 ---
 
-## 4. Seed Status
-
-**Not run (2026-08-30, second attempt)** — `npm run prisma:seed` / `npx prisma db seed` failed:
-
-```
-SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD environment variables must be set before running the seed.
-```
-
-**Root cause:** Cursor secure secrets were not written to the gitignored file `backend/.env`. Prisma loads seed variables from that file (or the process environment). As of the seed attempt, `backend/.env` contained only `DATABASE_URL`, JWT, and server vars — no `SEED_ADMIN_*` lines.
-
-### Fix (required before seed can run)
-
-Add these two lines to **`backend/.env`** via the secure secret mechanism (never commit, never paste in chat):
-
-```
-SEED_ADMIN_EMAIL=...
-SEED_ADMIN_PASSWORD=...   # min 12 characters
-```
-
-Then run:
+## 4. Seed Status — ✅ Complete
 
 ```bash
-npm run db:seed
-node backend/scripts/verify-db.cjs   # expect user_count >= 1
+npx prisma db seed
+# Database seed completed successfully
 ```
 
-Seed creates: admin user, default settings, sample delivery areas, sample categories.
+### Seeded data (Neon)
 
-### Post-seed verification (not yet run)
+| Entity | Count |
+|--------|-------|
+| Admin users | 1 |
+| Settings | 1 |
+| Delivery areas | 4 |
+| Categories | 3 |
+| Products | 0 (by design — seed does not create products) |
 
-- Admin exists in `User` table with role `ADMIN`
-- `POST /api/auth/admin/login` returns tokens
-- `GET /api/admin/settings` with Bearer token returns 200
+### Admin account
+
+| Field | Value |
+|-------|-------|
+| Email | `mhmdadmin0023@admin.com` |
+| Role | `ADMIN` |
+| Password | Configured in gitignored `backend/.env` (min 12 chars enforced by seed script) |
+
+**Note:** The seed script requires `SEED_ADMIN_PASSWORD` ≥ 12 characters. The password in `backend/.env` was adjusted to meet this requirement before seeding succeeded. Use the password currently set in your local `backend/.env` for admin login.
+
+### Seed credentials location
+
+`SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` must live in **`backend/.env`** (gitignored). Cursor secure secrets are not read unless written to this file.
 
 ---
 
 ## 5. Health Endpoint Results
-
-Backend started locally against Neon (`npm run start:dev`, port 3001):
 
 | Endpoint | Result |
 |----------|--------|
@@ -107,33 +95,39 @@ Backend started locally against Neon (`npm run start:dev`, port 3001):
 
 ## 6. API Verification (real Neon database)
 
+### Public endpoints
+
 | Endpoint | HTTP | Result |
 |----------|------|--------|
-| `GET /api/settings/store-status` | 200 | `{ isOpen: true }` |
-| `GET /api/categories` | 200 | `[]` (pre-seed) |
-| `GET /api/products?page=1&limit=5` | 200 | `{ products: [], total: 0 }` |
-| `GET /api/delivery/areas` | 200 | `[]` (pre-seed) |
+| `GET /api/settings/store-status` | 200 | Store open |
+| `GET /api/categories` | 200 | 3 categories |
+| `GET /api/delivery/areas` | 200 | 4 areas |
+| `GET /api/products` | 200 | Empty (no products seeded) |
 
-| `POST /api/auth/admin/login` (invalid creds) | 401 | Expected pre-seed (no admin user yet) |
+### Admin authentication
 
-Authenticated admin flows **blocked until seed** completes and valid credentials are in `backend/.env`.
+| Test | Result |
+|------|--------|
+| `POST /api/auth/admin/login` | ✅ 200 — access + refresh tokens returned |
+| `GET /api/admin/settings` (Bearer token) | ✅ 200 |
+| `GET /api/admin/analytics/overview` (Bearer token) | ✅ 200 |
+
+Verification script: `backend/scripts/verify-seed-auth.cjs`
 
 ---
 
 ## 7. Frontend Local Configuration
-
-Created gitignored local env files pointing to local backend:
 
 | App | File | Value |
 |-----|------|-------|
 | Store | `store/.env.local` | `NEXT_PUBLIC_API_URL=http://localhost:3001/api` |
 | Admin | `admin/.env.local` | `NEXT_PUBLIC_API_URL=http://localhost:3001/api` |
 
-Arabic RTL UI unchanged. Store and Admin builds succeed with these settings.
+Arabic RTL UI preserved. Store/Admin builds succeed.
 
 ---
 
-## 8. Build & Test Results
+## 8. Build & Test Results (final)
 
 | Check | Result |
 |-------|--------|
@@ -153,18 +147,20 @@ Arabic RTL UI unchanged. Store and Admin builds succeed with these settings.
 | `backend/.env` | ❌ Ignored |
 | `store/.env.local` | ❌ Ignored |
 | `admin/.env.local` | ❌ Ignored |
-| Database passwords / JWT secrets | ❌ Not in repository |
+| Passwords / JWT / DATABASE_URL | ❌ Not in repository |
 
 ---
 
-## 10. Files Changed (safe commits only)
+## 10. Files Changed (safe commits)
 
 | File | Change |
 |------|--------|
-| `backend/prisma/schema.prisma` | Added `directUrl = env("DATABASE_URL_UNPOOLED")` for Neon-safe migrations |
-| `backend/.env.example` | Document pooled vs direct Neon URLs |
-| `backend/scripts/verify-db.cjs` | Non-destructive DB verification helper |
-| `docs/DATABASE_SETUP.md` | Neon connection + migration + seed instructions |
+| `backend/prisma/schema.prisma` | `directUrl` for Neon migrations |
+| `backend/.env.example` | Pooled vs direct Neon URLs |
+| `backend/scripts/verify-db.cjs` | DB connection verification |
+| `backend/scripts/verify-seed-auth.cjs` | Admin seed + auth verification |
+| `docs/DATABASE_SETUP.md` | Neon + seed instructions |
+| `PHASE_L_NEON_DATABASE_REPORT.md` | This report |
 
 ---
 
@@ -172,50 +168,50 @@ Arabic RTL UI unchanged. Store and Admin builds succeed with these settings.
 
 ### Backend (`backend/.env` — gitignored)
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `DATABASE_URL` | Yes | Neon **pooled**, `sslmode=require` |
-| `DATABASE_URL_UNPOOLED` | Yes | Neon **direct**, for `migrate deploy` |
-| `JWT_SECRET` | Yes | Min 32 chars in production |
-| `JWT_REFRESH_SECRET` | Recommended | Separate from access secret |
-| `SEED_ADMIN_EMAIL` | For seed | Not committed |
-| `SEED_ADMIN_PASSWORD` | For seed | Min 12 chars, not hardcoded defaults |
+| Variable | Required |
+|----------|----------|
+| `DATABASE_URL` | Yes (Neon pooled) |
+| `DATABASE_URL_UNPOOLED` | Yes (Neon direct) |
+| `JWT_SECRET` / `JWT_REFRESH_SECRET` | Yes |
+| `SEED_ADMIN_EMAIL` | For seed |
+| `SEED_ADMIN_PASSWORD` | For seed (min 12 chars) |
 
 ### Store / Admin (`.env.local` — gitignored)
 
-| Variable | Value (local dev) |
-|----------|-------------------|
+| Variable | Local dev value |
+|----------|-----------------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001/api` |
 
 ---
 
-## 12. Still Blocking Production
+## 12. Still Blocking Production Deployment
 
-| Blocker | Notes |
-|---------|-------|
-| **Database seed** | Admin user + sample data not created yet |
-| **Production JWT secrets** | Dev secrets in local `.env` only |
-| **Cloud backend deployment** | Deferred — separate phase |
-| **Cloudflare Pages (Store/Admin)** | Deferred — separate phase |
-| **Object storage (R2)** | Still using local `STORAGE_PROVIDER=local` |
-| **SMS OTP provider** | Dev console OTP only |
+| Item | Notes |
+|------|-------|
+| Production JWT secrets | Dev secrets in local `.env` only |
+| Cloud backend host | Not deployed |
+| Cloudflare Pages (Store/Admin) | Not deployed |
+| Object storage (R2) | Local provider only |
+| SMS OTP | Dev console OTP only |
 
 ---
 
 ## 13. Recommended Next Phase (Phase M)
 
-1. **Provide seed credentials** via secure secret mechanism → run `npm run db:seed`.
-2. **Local full-stack test:** `npm run dev` → admin login → create products → store checkout flow.
-3. **Production secrets:** Generate strong JWT secrets for cloud backend.
-4. **Deploy backend** to cloud Node host with Neon `DATABASE_URL` (pooled) as environment variable.
-5. **Deploy Store + Admin** to Cloudflare Pages with production `NEXT_PUBLIC_API_URL`.
+1. **Local full-stack test:** `npm run dev` → admin login at `http://localhost:3002` → add products → test store checkout.
+2. **Production secrets:** Strong JWT secrets for cloud backend.
+3. **Deploy backend** with Neon pooled `DATABASE_URL`.
+4. **Deploy Store + Admin** to Cloudflare Pages with production API URL.
 
 ---
 
 ## 14. Phase L Status
 
-**✅ MOSTLY COMPLETE** — Neon PostgreSQL is connected, migrated, health-verified, and all static checks pass.
+**✅ COMPLETE** — Neon PostgreSQL connected, migrated, seeded, and fully verified locally.
 
-**⏸ Seed + admin auth tests remain blocked** until `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are added to **`backend/.env`** (not just the Cursor secrets panel).
+- No Neon projects created, modified, or deleted  
+- No Neon CLI authorization used  
+- No destructive database operations  
+- No deployment performed  
 
-**No Neon projects were created, modified, or deleted. No Neon CLI authorization was used. No destructive database operations were performed.**
+**Git commit:** see latest `main` for Phase L documentation and verification scripts.
