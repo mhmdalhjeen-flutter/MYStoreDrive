@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  Logger,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -13,6 +14,8 @@ import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
@@ -56,8 +59,7 @@ export class AuthService {
 
     // TODO: replace with real SMS provider
     if (process.env.NODE_ENV !== "production") {
-      // Dev-only: enables local OTP login without SMS. Never logged in production.
-      console.log(`[DEV OTP] ${phoneNumber}: ${otp}`);
+      this.logger.warn(`[DEV OTP] ${phoneNumber}: ${otp}`);
     }
 
     return otp;

@@ -86,7 +86,7 @@ describe("CartService", () => {
         availability: ProductAvailability.UNLIMITED,
       };
       mockProduct(product);
-      mockPrisma.cartItem.findUnique.mockResolvedValue(null);
+      mockPrisma.cartItem.findFirst.mockResolvedValue(null);
       mockPrisma.cartItem.create.mockResolvedValue({
         id: "ci-1",
         userId: "user-1",
@@ -147,7 +147,7 @@ describe("CartService", () => {
         availability: ProductAvailability.UNLIMITED,
       };
       mockProduct(product);
-      mockPrisma.cartItem.findUnique.mockResolvedValue({
+      mockPrisma.cartItem.findFirst.mockResolvedValue({
         id: "ci-1",
         quantity: 1,
       });

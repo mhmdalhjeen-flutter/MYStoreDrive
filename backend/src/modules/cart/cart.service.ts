@@ -76,13 +76,11 @@ export class CartService {
       throw new InsufficientStockException(product.name, quantity, 0);
     }
 
-    const existingItem = await this.prisma.cartItem.findUnique({
+    const existingItem = await this.prisma.cartItem.findFirst({
       where: {
-        userId_productId_variantId: {
-          userId,
-          productId,
-          variantId: variantId || null,
-        },
+        userId,
+        productId,
+        variantId: variantId ?? null,
       },
     });
 

@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-} from "@nestjs/common";
+import { Controller, Post, Body, HttpCode, HttpStatus } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { SendOtpDto } from "./dtos/send-otp.dto";
@@ -22,8 +16,14 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async sendOtp(@Body() sendOtpDto: SendOtpDto) {
-    await this.authService.generateOTP(sendOtpDto.phoneNumber);
-    return { message: "OTP sent successfully" };
+    const otp = await this.authService.generateOTP(sendOtpDto.phoneNumber);
+    const payload: { message: string; devOtp?: string } = {
+      message: "OTP sent successfully",
+    };
+    if (process.env.NODE_ENV !== "production") {
+      payload.devOtp = otp;
+    }
+    return payload;
   }
 
   @Post("verify-otp")
