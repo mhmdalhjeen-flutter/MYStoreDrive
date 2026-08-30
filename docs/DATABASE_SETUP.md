@@ -38,7 +38,38 @@ postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public&sslmode=require
 
 Never commit real credentials to Git.
 
-## 3. Generate Prisma Client
+### Neon PostgreSQL (project `yagota`)
+
+Use two connection strings from the Neon Console → **Connect**:
+
+| Variable | Neon type | Usage |
+|----------|-----------|--------|
+| `DATABASE_URL` | **Pooled** (`-pooler` hostname) | NestJS runtime / Prisma Client queries |
+| `DATABASE_URL_UNPOOLED` | **Direct** (no `-pooler`) | `prisma migrate deploy` only |
+
+Both must include `sslmode=require`. Do **not** use Neon CLI if you prefer not to grant org/project management permissions — copy strings manually from the dashboard.
+
+Apply migrations (non-destructive):
+
+```bash
+cd backend
+npx prisma migrate deploy
+npx prisma migrate status
+```
+
+Seed (requires `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`):
+
+```bash
+npm run db:seed
+```
+
+Verify connection:
+
+```bash
+node backend/scripts/verify-db.cjs
+curl http://localhost:3001/health/db
+```
+
 
 ```bash
 npm run db:generate
