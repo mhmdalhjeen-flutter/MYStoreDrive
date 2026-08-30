@@ -24,6 +24,11 @@ export class AnalyticsService {
       outOfStockProducts,
       revenueAggregate,
       averageOrderValue,
+      pendingPayments,
+      confirmedOrders,
+      rejectedPayments,
+      favoritesCount,
+      unreadSupport,
     ] = await Promise.all([
       this.prisma.order.count(),
       this.prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
@@ -61,6 +66,17 @@ export class AnalyticsService {
         where: { paymentStatus: PaymentStatus.VERIFIED },
         _avg: { total: true },
       }),
+      this.prisma.order.count({ where: { paymentStatus: PaymentStatus.SUBMITTED } }),
+      this.prisma.order.count({
+        where: {
+          status: {
+            in: [OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
+          },
+        },
+      }),
+      this.prisma.order.count({ where: { paymentStatus: PaymentStatus.REJECTED } }),
+      this.prisma.favorite.count(),
+      this.prisma.supportMessage.count({ where: { isAdmin: false, isRead: false } }),
     ]);
 
     return {
@@ -76,6 +92,11 @@ export class AnalyticsService {
       averageOrderValue: averageOrderValue._avg.total
         ? new Prisma.Decimal(averageOrderValue._avg.total).toNumber()
         : 0,
+      pendingPayments,
+      confirmedOrders,
+      rejectedPayments,
+      favoritesCount,
+      unreadSupport,
     };
   }
 }

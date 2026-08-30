@@ -1,4 +1,4 @@
-import { Controller, Put, Body } from '@nestjs/common';
+import { Controller, Get, Put, Body } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dtos/update-settings.dto';
@@ -8,6 +8,11 @@ import { UserRole } from '../users/enums/user-role.enum';
 @Roles(UserRole.ADMIN)
 export class AdminSettingsController {
   constructor(private readonly settingsService: SettingsService) {}
+
+  @Get()
+  async getSettings() {
+    return this.settingsService.getSettings();
+  }
 
   @Put()
   async updateSettings(@Body() updateSettingsDto: UpdateSettingsDto) {
