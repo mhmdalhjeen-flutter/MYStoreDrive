@@ -91,21 +91,14 @@ async function bootstrap() {
   });
 
   if (process.env.NODE_ENV !== "production") {
-    try {
-      const config = new DocumentBuilder()
-        .setTitle("Arabic E-Commerce API")
-        .setDescription("Backend API for Arabic RTL E-commerce Platform")
-        .setVersion("1.0")
-        .addBearerAuth()
-        .build();
-      const document = SwaggerModule.createDocument(app, config);
-      SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
-    } catch (error) {
-      console.warn(
-        "Swagger docs disabled:",
-        error instanceof Error ? error.message : error,
-      );
-    }
+    const config = new DocumentBuilder()
+      .setTitle("Arabic E-Commerce API")
+      .setDescription("Backend API for Arabic RTL E-commerce Platform")
+      .setVersion("1.0")
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
   }
 
   const port = process.env.PORT || process.env.BACKEND_PORT || 3001;

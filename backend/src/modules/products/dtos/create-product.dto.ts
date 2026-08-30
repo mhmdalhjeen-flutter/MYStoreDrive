@@ -17,31 +17,9 @@ import {
   ProductAvailability,
   ProductCondition,
 } from "@prisma/client";
+import { CreateVariantDto } from "./create-variant.dto";
 
-export class CreateVariantDto {
-  @ApiProperty({ description: "Variant name (e.g., Red)" })
-  @IsString()
-  name: string;
-
-  @ApiProperty({ description: "Variant value (e.g., #FF0000)" })
-  @IsString()
-  value: string;
-
-  @ApiProperty({ description: "Variant type (e.g., color, size)" })
-  @IsString()
-  type: string;
-
-  @ApiPropertyOptional({ description: "Price adjustment" })
-  @IsOptional()
-  @IsNumber()
-  priceAdjustment?: number = 0;
-
-  @ApiPropertyOptional({ description: "Variant stock" })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  stock?: number = 0;
-}
+export { CreateVariantDto } from "./create-variant.dto";
 
 export class CreateProductDto {
   @ApiProperty({ description: "Product name (Arabic)" })
@@ -151,7 +129,11 @@ export class CreateProductDto {
   @IsDate()
   offerEndDate?: Date;
 
-  @ApiPropertyOptional({ description: "Product variants" })
+  @ApiPropertyOptional({
+    description: "Product variants",
+    type: () => CreateVariantDto,
+    isArray: true,
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
