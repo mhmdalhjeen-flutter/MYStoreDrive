@@ -56,9 +56,8 @@ export class AuthService {
 
     // TODO: replace with real SMS provider
     if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `OTP generated for ${phoneNumber} (dev only — not logged in production)`,
-      );
+      // Dev-only: enables local OTP login without SMS. Never logged in production.
+      console.log(`[DEV OTP] ${phoneNumber}: ${otp}`);
     }
 
     return otp;

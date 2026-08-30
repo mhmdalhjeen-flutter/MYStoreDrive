@@ -5,7 +5,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { memoryStorage } from "multer";
+import { createUploadMulterOptions } from "./multer.config";
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
@@ -21,12 +21,7 @@ export class UploadController {
 
   @Post("admin/upload/product-image")
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(
-    FileInterceptor("file", {
-      storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-    }),
-  )
+  @UseInterceptors(FileInterceptor("file", createUploadMulterOptions()))
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -40,12 +35,7 @@ export class UploadController {
 
   @Post("admin/upload/payment-qr")
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(
-    FileInterceptor("file", {
-      storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-    }),
-  )
+  @UseInterceptors(FileInterceptor("file", createUploadMulterOptions()))
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -59,12 +49,7 @@ export class UploadController {
 
   @Post("upload/payment-proof")
   @Roles(UserRole.CUSTOMER)
-  @UseInterceptors(
-    FileInterceptor("file", {
-      storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-    }),
-  )
+  @UseInterceptors(FileInterceptor("file", createUploadMulterOptions()))
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {

@@ -7,6 +7,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { Request, Response } from "express";
+import { MulterError } from "multer";
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -32,6 +33,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message =
           (responseObj.message as string | string[]) || exception.message;
         error = (responseObj.error as string) || error;
+      }
+    } else if (exception instanceof MulterError) {
+      status = HttpStatus.BAD_REQUEST;
+      error = "Bad Request";
+      if (exception.code === "LIMIT_FILE_SIZE") {
+        message = "File size exceeds the maximum allowed size";
+      } else if (exception.code === "LIMIT_FILE_COUNT") {
+        message = "Too many files uploaded";
+      } else {
+        message = exception.message;
       }
     } else if (exception instanceof Error) {
       message = exception.message;

@@ -98,12 +98,34 @@ npm run dev:admin     # http://localhost:3002
 
 ## 7. Verify
 
+### Static checks (no database required)
+
+From the repository root:
+
+```bash
+npm run validate        # prisma generate + prisma validate
+npm run typecheck       # TypeScript across backend, store, admin
+npm run lint            # ESLint across all workspaces
+npm run test:backend    # Jest unit tests (mocked, no PostgreSQL)
+npm run build           # Production builds for all three apps
+```
+
+Or run the full static pipeline:
+
+```bash
+npm run verify:static
+```
+
+### Runtime checks (requires PostgreSQL + migrations)
+
 | Check | URL |
 |-------|-----|
 | API health | `GET http://localhost:3001/health` |
 | Database health | `GET http://localhost:3001/health/db` |
 | API (authenticated routes) | `http://localhost:3001/api/...` |
 | Swagger (development only) | `http://localhost:3001/api/docs` |
+
+**Local OTP login (development only):** After `POST /auth/send-otp`, the 6-digit code is printed in the backend console as `[DEV OTP]`. It is never logged in production.
 
 ## Migration status terminology
 
