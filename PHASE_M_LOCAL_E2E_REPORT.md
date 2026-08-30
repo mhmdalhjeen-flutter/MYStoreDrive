@@ -147,10 +147,17 @@ Start locally: `npm run dev` from repo root (uses Neon via `backend/.env`).
 **Cause:** `findUnique` with `userId_productId_variantId` cannot use `null` variantId.  
 **Fix:** `cart.service.ts` uses `findFirst` with explicit `variantId: null` filter. Unit mock updated.
 
-### 3. Swagger plugin crash on startup (Arabic workspace path)
+### 3. Swagger plugin crash on startup (nested DTO module resolution)
 
-**Symptom:** Backend failed to start after rebuild; module not found for `.ts` paths under Swagger introspection.  
-**Fix:** Removed `@nestjs/swagger` CLI plugin from `nest-cli.json` (DTOs already have explicit decorators). Wrapped Swagger setup in try/catch in `main.ts`.
+**Symptom:** After modules initialize, bootstrap crashes with `Cannot find module '.../create-product.dto'` at `SchemaObjectFactory.mergePropertyWithMetadata` (stack trace near line 129).  
+**Root cause:** The `@nestjs/swagger` CLI plugin with `classValidatorShim: true` emits `_OPENAPI_METADATA_FACTORY()` code that calls `require()` against **TypeScript source paths** for nested DTOs (e.g. `CreateVariantDto` on the `variants` field). Node.js running compiled `dist/**/*.js` cannot load those `.ts` paths at Swagger document generation time.  
+**Fix (keeps Swagger enabled):**
+- Set `classValidatorShim: false` in `backend/nest-cli.json` (explicit `@ApiProperty*` decorators already document DTOs).
+- Split `CreateVariantDto` into `create-variant.dto.ts`.
+- Add explicit `type: () => CreateVariantDto, isArray: true` on the `variants` field.
+- Remove the temporary try/catch workaround in `main.ts`.
+
+**Note:** A clean rebuild (`rm -rf dist && npm run build`) is required after changing plugin settings.
 
 ### 4. Store/Admin Tailwind 500 (from Phase L, confirmed)
 
