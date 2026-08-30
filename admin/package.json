@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3002",
+    "dev": "npx cross-env NEXT_PUBLIC_API_URL=http://localhost:3001/api next dev -p 3002",
     "build": "next build",
     "pages:build": "next build && npx @cloudflare/next-on-pages",
     "pages:preview": "npx wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
