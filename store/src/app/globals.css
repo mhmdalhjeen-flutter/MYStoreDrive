@@ -88,4 +88,12 @@
   .success-state {
     @apply flex flex-col items-center justify-center p-8 text-center text-success-600;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

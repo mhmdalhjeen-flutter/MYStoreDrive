@@ -19,6 +19,7 @@ export const createMockPrismaService = () => ({
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
   },
@@ -27,6 +28,7 @@ export const createMockPrismaService = () => ({
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     deleteMany: jest.fn(),
   },
   category: {
@@ -62,6 +64,11 @@ export const createMockPrismaService = () => ({
     count: jest.fn(),
   },
   order: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
     count: jest.fn(),
   },
   orderItem: {
@@ -75,6 +82,32 @@ export const createMockPrismaService = () => ({
     findMany: jest.fn(),
     count: jest.fn(),
   },
+  favorite: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
+    delete: jest.fn(),
+  },
+  review: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    aggregate: jest.fn(),
+  },
+  announcement: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  supportMessage: {
+    findMany: jest.fn(),
+    create: jest.fn(),
+    updateMany: jest.fn(),
+  },
   $connect: jest.fn(),
   $disconnect: jest.fn(),
+  $transaction: jest.fn(),
 });

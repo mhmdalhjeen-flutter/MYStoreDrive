@@ -23,4 +23,10 @@ export class SettingsController {
   async getStoreStatus() {
     return this.settingsService.getStoreStatus();
   }
+
+  @Public()
+  @Get('payment')
+  async getPaymentSettings() {
+    return this.settingsService.getPaymentSettings();
+  }
 }

@@ -94,4 +94,15 @@ export class SettingsService {
       message: settings.storeClosedMessage,
     };
   }
+
+  async getPaymentSettings() {
+    const settings = await this.getSettings();
+    return {
+      paymentInstructions: settings.paymentInstructions,
+      paymentInstructionsEn: settings.paymentInstructionsEn,
+      paymentQrImage: settings.paymentQrImage,
+      paymentAccountDetails: settings.paymentAccountDetails,
+      paymentAccountDetailsEn: settings.paymentAccountDetailsEn,
+    };
+  }
 }
